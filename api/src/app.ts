@@ -1,70 +1,89 @@
-import express, {
-	Application,
-	json,
-	NextFunction,
-	Request,
-	Response,
-	urlencoded,
-} from "express";
-import cors from "cors";
-import { APP_NAME, PORT } from "./config/app.config";
-import AppError from "./errors/app.error";
-import sampleRoute from "./routes/sample.route";
-import corsOptions from "./middlewares/express/cors";
+// app.ts
 
-export default class App {
-	private app: Application;
+import { Application, Request, Response } from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
 
-	constructor() {
-		this.app = express();
-		this.config();
-		this.router();
-		this.errorHandlers();
-	}
+// --- BAGIAN KRITIS: MENGATASI TYPERROR PADA EXPRESS ---
+// 1. Gunakan require() dan casting type untuk mendapatkan objek module Express
+const express = require('express');
+const app: Application = express.default ? express.default() : express();
+// --- AKHIR BAGIAN KRITIS ---
 
-	private config(): void {
-		this.app.use(json());
-		this.app.use(urlencoded({ extended: true }));
-		this.app.use(cors(corsOptions));
-	}
+// --- KONFIGURASI AWAL ---
+dotenv.config(); // Memuat variabel dari .env
+const PORT = process.env.PORT || 3000;
 
-	private router(): void {
-		const apiRouter = express.Router();
-		// Prefix all routes with /api
-		this.app.use("/api", apiRouter);
-		// Welcome route
-		apiRouter.get("/", (_: Request, res: Response) =>
-			res.send(`Welcome to the ${APP_NAME} API`)
-		);
-		// Define routes here
-		apiRouter.use("/samples", sampleRoute.useRouter());
-	}
 
-	private errorHandlers(): void {
-		// * 404 Handler
-		this.app.use((_: Request, res: Response) => {
-			console.error("404 Not Found");
-			return res.status(404).send({ message: "Not Found" });
-		});
+// --- IMPORT ROUTES ---
+// Sesuaikan path ini dengan struktur folder Anda!
+import authRoutes from './routes/auth.routes';  
+import eventRoutes from './routes/event.routes';         
+import transactionRoutes from './routes/transaction.routes'; 
+import promotionRoutes from './routes/promotion.route';
+import reviewRoutes from './routes/review.route';
+import { startTransactionWorker } from './services/worker.service'
 
-		// * Global Error Handler
-		this.app.use(
-			(error: AppError, _: Request, res: Response, __: NextFunction) => {
-				console.table({
-					errorStatus: error.status,
-					errorMessage: error.message,
-				});
-				return res.status(error.status || 500).send({
-					status: error.status || 500,
-					message: error.message || "Internal Server Error",
-				});
-			}
-		);
-	}
 
-	start(): void {
-		this.app.listen(PORT, () =>
-			console.log(`-> [API] Local: http://localhost:${PORT}`)
-		);
-	}
-}
+// --- MIDDLEWARE UMUM ---
+app.use((req, res, next) => {
+    console.log(`[REQUEST]: ${req.method} ${req.url} - Time: ${new Date().toLocaleTimeString()}`);
+    next();
+});
+
+// --- PERBAIKAN KRITIS: Body Parser Alternatif (Jika express.json Gagal) ---
+// Middleware ini WAJIB diuji.
+app.use((req, res, next) => {
+    // Hanya proses body jika Content-Type adalah JSON dan req.body belum terisi
+    if (req.headers['content-type'] === 'application/json' && req.body === undefined) {
+        let data = '';
+        // Baca data stream dari request (buffer mentah)
+        req.on('data', chunk => {
+            data += chunk.toString();
+        });
+        req.on('end', () => {
+            try {
+                // Coba parse data mentah secara manual
+                (req as any).body = JSON.parse(data);
+                console.log("DEBUG -- MANUAL JSON PARSING SUKSES --");
+                next();
+            } catch (e) {
+                console.error("DEBUG -- MANUAL JSON PARSING GAGAL --", e);
+                // Jika parsing manual gagal, lanjutkan ke middleware Express.json
+                next(); 
+            }
+        });
+    } else {
+        next();
+    }
+});
+// -----------------------------------------------------------------------
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+// --- DEKLARASI ROUTE API UTAMA --- 
+app.use('/auth', authRoutes);
+app.use('/events', eventRoutes); 
+app.use('/transactions', transactionRoutes);
+app.use('/promotions', promotionRoutes);
+app.use('/reviews', reviewRoutes);
+
+
+
+// --- ROOT ROUTE (Opsional) ---
+app.get('/', (req: Request, res: Response) => {
+    res.status(200).json({ 
+        message: 'API Server is Ready!',
+        environment: process.env.NODE_ENV || 'development',
+    });
+});
+
+
+// --- MENJALANKAN SERVER ---
+app.listen(PORT, () => {
+    console.log(`[server]: API Server is running at http://localhost:${PORT}`);
+    console.log(`[server]: Environment: ${process.env.NODE_ENV || 'development'}`);
+    startTransactionWorker();
+});
