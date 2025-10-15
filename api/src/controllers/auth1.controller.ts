@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import jwt, { sign } from 'jsonwebtoken'; // Gunakan sign untuk mengatasi error
 import { RegisterBodyWithRole, LoginBody, TokenPayload } from '../types/auth'; 
 import { generateReferralCode } from '../utils/helpers'; // Fungsi helper
+import { generateCouponCode } from '../utils/referral.utils';
+import { date } from 'yup';
 
 // --- SETUP ---
 const prisma = new PrismaClient();
@@ -22,7 +24,7 @@ const AUTH_JWT_SECRET = process.env.AUTH_JWT_SECRET || 'ganti_di_env_yang_aman';
  * @access Public
  */
 export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, res: Response): Promise<Response | void> => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role , referralCode } = req.body;
 
     // --- 1. VALIDASI INPUT AWAL ---
     if (!email || !password) {
@@ -30,6 +32,33 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
     }
     if (password.length < 8) {
         return res.status(400).json({ message: "Password minimal 8 karakter." });
+    }
+
+    let referrerUser = null;
+    if (referralCode) {
+      referrerUser = await prisma.user.findFirst({
+        where: {referralCode : referralCode}
+      });
+      if (!referrerUser) {
+        return res.status(400).json({ message: "Kode referral tidak valid." });
+      }
+    }
+
+    if (referrerUser) {
+      // Berikan poin kepada referrer
+      await prisma.user.update({
+        where: {id: referrerUser.id},
+        data: {points: {increment: 10000}},
+      });
+
+      await prisma.point.create({
+        data: {
+          userId: referrerUser.id,
+          amount: 10000,
+          reason: 'Referral Bonus',
+          expiresAt: new Date(Date.now() + 90*24*60*60*1000) // Poin berlaku 90 hari
+        }
+      });
     }
 
     try {
@@ -53,6 +82,8 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
         // 5. Buat kode referral yang unik
         const referralCode = generateReferralCode(); 
         
+        
+        
         // 6. Simpan User Baru ke Database
         const newUser = await prisma.user.create({
             data: {
@@ -60,7 +91,8 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
                 name: name,
                 passwordHash: hashedPassword, 
                 role: finalRole,             // Role ditentukan di sini
-                referralCode: referralCode,      
+                referralCode: referralCode,
+                referredById: referrerUser ? referrerUser.id : null      
             },
             select: {
                 id: true,
@@ -72,6 +104,17 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
                 createdAt: true,
             }
         });
+
+        if (referrerUser) {
+          await prisma.coupon.create({
+            data: {
+              userId : newUser.id,
+              code : generateCouponCode(),
+              discount: 10000,
+              expiresAt: new Date(Date.now() + 90*24*60*60*1000), // 3 bulan dari sekarang
+            }
+          })
+        }
 
         // 7. Respon Sukses
         res.status(201).json({ 
