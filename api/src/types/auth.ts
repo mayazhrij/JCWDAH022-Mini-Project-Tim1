@@ -8,6 +8,7 @@ export interface RegisterBodyWithRole {
     email: string;
     password: string;
     role?: 'customer' | 'organizer'; 
+    referralCode?: string; // Tambahan field referrerCode
 }
 
 export interface LoginBody {

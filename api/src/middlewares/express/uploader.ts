@@ -24,7 +24,7 @@ export const uploader = (filePrefix: string, folderName?: string) => {
 			cb: FilenameCallback
 		) => {
 			const originalNameParts = file.originalname.split(".");
-			const fileExtension = originalNameParts.at(-1);
+			const fileExtension = originalNameParts.slice(-1)[0];
 			const newFileName = `${filePrefix}-${Date.now()}.${fileExtension}`;
 			cb(null, newFileName);
 		},

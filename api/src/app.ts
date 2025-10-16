@@ -3,6 +3,7 @@
 import { Application, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { startExpiryJobs } from './jobs/expire-rewards';
 
 // --- BAGIAN KRITIS: MENGATASI TYPERROR PADA EXPRESS ---
 // 1. Gunakan require() dan casting type untuk mendapatkan objek module Express
@@ -86,4 +87,6 @@ app.listen(PORT, () => {
     console.log(`[server]: API Server is running at http://localhost:${PORT}`);
     console.log(`[server]: Environment: ${process.env.NODE_ENV || 'development'}`);
     startTransactionWorker();
+
+    startExpiryJobs();
 });
