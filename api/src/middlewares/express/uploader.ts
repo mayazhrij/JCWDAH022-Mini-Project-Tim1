@@ -2,12 +2,13 @@ import { Request } from "express";
 import multer from "multer";
 import { join } from "path";
 
+
 type DestinationCallback = (error: Error | null, destination: string) => void;
 type FilenameCallback = (error: Error | null, filename: string) => void;
 type FileFilterCallback = (error?: Error | null, acceptFile?: boolean) => void;
 
 export const uploader = (filePrefix: string, folderName?: string) => {
-	const defaultDir = join(__dirname, "../../public");
+	const defaultDir = join(__dirname, "../../../uploads");
 
 	const storage = multer.diskStorage({
 		destination: (
@@ -15,8 +16,9 @@ export const uploader = (filePrefix: string, folderName?: string) => {
 			file: Express.Multer.File,
 			cb: DestinationCallback
 		) => {
-			const destination = folderName ? defaultDir + folderName : defaultDir;
+			const destination = folderName ? join(defaultDir, folderName) : defaultDir;
 			cb(null, destination);
+
 		},
 		filename: (
 			req: Request,
