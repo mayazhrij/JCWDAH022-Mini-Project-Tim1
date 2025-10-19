@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Label, TextInput, Button, Alert } from 'flowbite-react';
 import { HiInformationCircle } from 'react-icons/hi'; // Contoh ikon dari heroicons
 import { login } from '@/services/auth.service'; // Sesuaikan path import
+import Header from '@/components/Headers';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,6 +51,8 @@ if (typeof error === 'string') {
   }};
 
   return (
+    <>
+    <Header />
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="max-w-md w-full">
         <h1 className="text-2xl font-bold text-center mb-6">Masuk ke Akun Anda</h1>
@@ -102,12 +105,13 @@ if (typeof error === 'string') {
           {/* Link Register */}
           <p className="text-sm text-center text-gray-500">
             Belum punya akun?{' '}
-            <a href="/auth/register" className="text-cyan-600 hover:underline">
+            <a href="/register" className="text-cyan-600 hover:underline">
               Daftar di sini
             </a>
           </p>
         </form>
       </Card>
     </div>
+    </>
   );
 }
