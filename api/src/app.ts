@@ -25,7 +25,8 @@ import eventRoutes from './routes/event.routes';
 import transactionRoutes from './routes/transaction.routes'; 
 import promotionRoutes from './routes/promotion.route';
 import reviewRoutes from './routes/review.route';
-import { startTransactionWorker } from './services/worker.service'
+import { startTransactionWorker } from './services/worker.service';
+import userRoutes from './routes/user.routes';
 
 
 // --- MIDDLEWARE UMUM ---
@@ -74,7 +75,7 @@ app.use('/promotions', promotionRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/profile', profileRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
+app.use('/users', userRoutes);
 
 
 // --- ROOT ROUTE (Opsional) ---
