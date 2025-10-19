@@ -45,7 +45,7 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
     if (referralCode) {
       console.log(`Mencari referrer dengan kode: ${referralCode}`);
       referrerUser = await prisma.user.findUnique({
-        where: {referralCode : referralCode}
+        where: { referralCode }
       });
       if (!referrerUser) {
         return res.status(400).json({ message: "Kode referral tidak valid." });
@@ -81,7 +81,7 @@ export const registerUser = async (req: Request<{}, {}, RegisterBodyWithRole>, r
         const newUser = await prisma.user.create({
           data: {
             email,
-            name: name,
+            name: name ? name : null,
             passwordHash: hashedPassword, 
             role: finalRole,             // Role ditentukan di sini
             referralCode: newReferralCode,
