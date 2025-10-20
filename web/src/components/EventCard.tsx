@@ -28,18 +28,18 @@ const EventCard: React.FC<EventProps> = ({ event }) => {
             </Link>
             <div className="flex flex-col gap-2">
                 <p className="font-normal text-gray-700 dark:text-gray-400">
-                    Lokasi: {event.location}
+                    Location: {event.location}
                 </p>
                 <p className="font-normal text-gray-700 dark:text-gray-400">
-                    Tanggal: {formatDate(event.startDate)}
+                    Start Date: {formatDate(event.startDate)}
                 </p>
             </div>
             <div className="mt-2 flex justify-between items-center">
                 <Badge color="success">
-                    {minPrice === 0 ? 'GRATIS' : `Mulai dari Rp ${minPrice.toLocaleString('id-ID')}`}
+                    {minPrice === 0 ? 'FREE' : `Start from Rp ${minPrice.toLocaleString('id-ID')}`}
                 </Badge>
                 <Link href={`/events/${event.id}`} passHref>
-                    <Button size="sm">Lihat Detail</Button>
+                    <Button size="sm">View Details</Button>
                 </Link>
             </div>
         </Card>

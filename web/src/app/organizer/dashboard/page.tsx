@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from 'react';
 import OrganizerNavbar from "@/components/dashboard/OrganizerNavbar";
 import { getDashboardStats, getEvents, getTransactions } from '@/services/dashboard.service';

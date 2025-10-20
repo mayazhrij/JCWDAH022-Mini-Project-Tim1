@@ -3,6 +3,7 @@
 import { api } from './api'; 
 import { EventResponse } from '@/types/data'; 
 import { isAxiosError } from 'axios';
+import { EventCreationBody } from '@/types/event';
 
 export const getEvents = async (query?: string): Promise<EventResponse[]> => {
     try {
@@ -25,4 +26,9 @@ export const getEvents = async (query?: string): Promise<EventResponse[]> => {
         // Mengembalikan array kosong agar Server Component tidak crash
         return []; 
     }
+};
+
+export const createEventApi = async (data: EventCreationBody) => {
+    const response = await api.post('/events', data);
+    return response.data;
 };

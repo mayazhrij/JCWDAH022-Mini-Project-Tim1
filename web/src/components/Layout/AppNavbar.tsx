@@ -31,31 +31,31 @@ const AppNavbar = () => {
         <Navbar fluid rounded className="bg-white border-b">
             <NavbarBrand as={Link} href="/">
                 <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">
-                    EventMPV
+                    Tickety
                 </span>
             </NavbarBrand>
             <div className="flex md:order-2 gap-2">
                 {isAuthenticated ? (
                     <Dropdown label={role === 'organizer' ? 'Organizer' : 'Customer'} inline>
                         {role === 'organizer' && (
-                            <DropdownItem as={Link} href="/organizer/create">Buat Event Baru</DropdownItem>
+                            <DropdownItem as={Link} href="/organizer/create">Make New Event</DropdownItem>
                         )}
                         {role === 'customer' && (
-                            <DropdownItem as={Link} href="/transactions/my">Tiket Saya</DropdownItem>
+                            <DropdownItem as={Link} href="/transactions/my">My Tickets</DropdownItem>
                         )}
                         <DropdownDivider />
                         <DropdownItem onClick={handleLogout}>Keluar (Logout)</DropdownItem>
                     </Dropdown>
                 ) : (
-                    <Link href="/auth/login" passHref>
-                        <Button color="blue">Masuk / Daftar</Button>
+                    <Link href="/login" passHref>
+                        <Button color="blue">Login / Register</Button>
                     </Link>
                 )}
                 <NavbarToggle />
             </div>
             <NavbarCollapse>
                 <NavbarLink as={Link} href="/" active={true}>Home</NavbarLink>
-                <NavbarLink as={Link} href="/events">Cari Event</NavbarLink>
+                <NavbarLink as={Link} href="/events">Search Event</NavbarLink>
                 {/* Tambahan Menu Lain */}
             </NavbarCollapse>
         </Navbar>

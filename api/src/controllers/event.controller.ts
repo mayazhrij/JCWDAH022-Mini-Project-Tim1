@@ -141,8 +141,6 @@ export const getEventListPublic = async (req: Request, res: Response): Promise<R
     }
 };
 
-// controllers/event.controller.ts (Contoh logic)
-
 export const getEventDetailPublic = async (req: Request, res: Response): Promise<Response | void> => {
     // 1. Ambil ID dari URL parameter
     const eventId = req.params.id; 
@@ -243,5 +241,3 @@ export const getActivePromotions = async (req: Request, res: Response): Promise<
         return res.status(500).json({ message: "Gagal mengambil daftar promosi aktif." });
     }
 };
-
-// Pastikan route.get('/active', getActivePromotions) ditambahkan ke promotion.routes.ts
