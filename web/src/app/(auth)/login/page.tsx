@@ -55,7 +55,7 @@ if (typeof error === 'string') {
     <Header />
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center mb-6">Masuk ke Akun Anda</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">Log in to your account</h1>
 
         {/* Tampilan Error */}
         {error && (
@@ -68,12 +68,12 @@ if (typeof error === 'string') {
           {/* Email Input */}
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="email">Email Anda</Label> {/* Teks diletakkan di sini */}
+              <Label htmlFor="email">Your Email</Label> {/* Teks diletakkan di sini */}
             </div>
             <TextInput
               id="email"
               type="email"
-              placeholder="nama@event.com"
+              placeholder="name@event.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +84,7 @@ if (typeof error === 'string') {
           {/* Password Input */}
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="password">Password Anda</Label>
+              <Label htmlFor="password">Your Password</Label>
             </div>
             <TextInput
               id="password"
@@ -99,14 +99,14 @@ if (typeof error === 'string') {
           {/* Tombol Submit (Sudah Diperbaiki) */}
           <Button type="submit" disabled={isLoading}>
             {/* Logic children tetap ada untuk menampilkan status loading */}
-            {isLoading ? 'Memproses...' : 'Masuk'}
+            {isLoading ? 'Loading...' : 'Log In'}
           </Button>
-          
+
           {/* Link Register */}
           <p className="text-sm text-center text-gray-500">
-            Belum punya akun?{' '}
+            Don't have an account?{' '}
             <a href="/register" className="text-cyan-600 hover:underline">
-              Daftar di sini
+              Register here
             </a>
           </p>
         </form>

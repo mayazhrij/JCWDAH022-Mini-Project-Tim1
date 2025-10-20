@@ -23,7 +23,7 @@ export default async function Home() {
 
     return (
         <main className="container mx-auto p-4">
-            <h1 className="text-3xl font-bold mb-6 text-center">Daftar Event Mendatang</h1>
+            <h1 className="text-3xl font-bold mb-6 text-center">List of Upcoming Events</h1>
             
             {/* Tampilkan pesan error jika fetch gagal */}
             {fetchError ? (
