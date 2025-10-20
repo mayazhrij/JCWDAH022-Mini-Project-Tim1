@@ -5,6 +5,7 @@ import axios from 'axios';
 import { getEvents } from '@/services/event.service'; 
 import EventListClient from '@/components/EventListCLient'; 
 import { EventResponse } from '@/types/data';
+import Header from '@/components/Headers';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -22,6 +23,8 @@ export default async function Home() {
     }
 
     return (
+        <>
+        <Header />
         <main className="container mx-auto p-4">
             <h1 className="text-3xl font-bold mb-6 text-center">List of Upcoming Events</h1>
             
@@ -34,7 +37,7 @@ export default async function Home() {
                 // Lanjutkan rendering jika tidak ada error
                 <EventListClient initialEvents={initialEvents} />
             )}
-        </main>
+        </main></>
     );
 }
 
