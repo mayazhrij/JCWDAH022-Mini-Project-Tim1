@@ -28,32 +28,27 @@ import reviewRoutes from './routes/review.route';
 import { startTransactionWorker } from './services/worker.service';
 import userRoutes from './routes/user.routes';
 
-
-// --- MIDDLEWARE UMUM ---
+// --- MIDDLEWARES GLOBAL ---
 app.use((req, res, next) => {
-    console.log(`[REQUEST]: ${req.method} ${req.url} - Time: ${new Date().toLocaleTimeString()}`);
-    next();
-});
-
-// --- PERBAIKAN KRITIS: Body Parser Alternatif (Jika express.json Gagal) ---
-// Middleware ini WAJIB diuji.
-app.use((req, res, next) => {
-    // Hanya proses body jika Content-Type adalah JSON dan req.body belum terisi
+    // Logika debugging/parsing body hanya boleh berjalan pada POST, PUT, PATCH
+    if (req.method === 'GET' || req.method === 'HEAD') {
+        return next(); // --- SOLUSI: Abaikan GET/HEAD dan langsung lanjutkan ---
+    }
+    
+    // Logic untuk menangani data stream (yang Anda tambahkan untuk debugging req.body)
     if (req.headers['content-type'] === 'application/json' && req.body === undefined) {
         let data = '';
-        // Baca data stream dari request (buffer mentah)
         req.on('data', chunk => {
             data += chunk.toString();
         });
         req.on('end', () => {
             try {
-                // Coba parse data mentah secara manual
                 (req as any).body = JSON.parse(data);
                 console.log("DEBUG -- MANUAL JSON PARSING SUKSES --");
                 next();
             } catch (e) {
                 console.error("DEBUG -- MANUAL JSON PARSING GAGAL --", e);
-                // Jika parsing manual gagal, lanjutkan ke middleware Express.json
+                // Jika gagal parse (terjadi saat body kosong), kita panggil next() agar tidak hang
                 next(); 
             }
         });
