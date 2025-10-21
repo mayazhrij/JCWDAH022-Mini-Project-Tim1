@@ -25,7 +25,7 @@ const STATUS_MAP: Record<string, { color: string, icon: React.FC, label: string 
 
 export default function MyTransactionsPage() {
     // Ambil status dari hook yang sudah disinkronkan
-    const { isAuthenticated, isLoading, isInitialLoadComplete } = useAuthStatus();
+    const { isAuthenticated, isInitialLoadComplete } = useAuthStatus();
     const router = useRouter();
     
     // Pengecekan tokenExists di client side
@@ -33,36 +33,49 @@ export default function MyTransactionsPage() {
     
     // --- LOGIC REDIRECT DI useEffect (Side Effect) ---
     useEffect(() => {
-        // Redirect hanya jika loading selesai DAN otentikasi gagal.
-        // Jika loading sudah selesai, dan tidak ada otentikasi, redirect user.
+        // Redirect hanya jika hook selesai membaca state DAN otentikasi gagal.
         if (isInitialLoadComplete && !isAuthenticated) {
-            router.push('/login');
+            
+            // Hapus token kadaluarsa (jika ada) sebelum redirect (cleanup)
+            if (tokenExists) {
+                localStorage.removeItem('jwt_token');
+                localStorage.removeItem('user_role');
+            }
+            
+            router.push('/auth/login');
         }
     }, [isAuthenticated, isInitialLoadComplete, router]);
 
-    // --- LOGIC RENDERING UNTUK MENGHINDARI CRASH ---
+    // --- LOGIC RENDERING UTAMA (GUARD) ---
     
     // 1. KASUS LOADING / VERIFIKASI AWAL
-    // Tampilkan loading jika hook belum selesai memverifikasi TAPI ada token (untuk menutupi race condition).
-    if (isLoading || !isInitialLoadComplete) {
+    // Tampilkan loading jika hook belum selesai membaca state awal.
+    if (!isInitialLoadComplete) { 
         return <div className="text-center p-20"><Spinner size="xl" /><p>Memverifikasi sesi...</p></div>;
     }
     
-    // 2. KASUS REDIRECT DIPICU (User tidak login/tidak ada token)
-    // Jika loading selesai dan otentikasi gagal, return null (redirect sedang diproses di useEffect).
+    // 2. KASUS REDIRECT DIPICU (Jika loading selesai dan otentikasi gagal)
     if (!isAuthenticated) { 
         return null; 
     }
     
     // 3. Render halaman utama jika otentikasi sukses
     if (isAuthenticated) {
-        // --- LOGIC SWR FETCH TRANSACTIONS DI SINI ---
         
-        // Kunci SWR sekarang dijamin aktif karena isAuthenticated = true
+        // Kunci SWR hanya aktif karena isAuthenticated=true
         const { data: transactions, error, isLoading: isDataLoading } = useSWR('/transactions/my', getMyTransactions);
         
         if (isDataLoading) return <div className="text-center p-20"><Spinner size="xl" /><p>Memuat Riwayat Transaksi...</p></div>;
-        if (error) return <div className="text-center p-20 text-red-500">Gagal memuat transaksi: {error.message}</div>;
+        
+        // --- PERBAIKAN: Tangani Error Token Invalid di SWR ---
+        if (error) {
+            // Karena fetch SWR gagal (token invalid/expired), ini akan memicu useEffect di atas
+            // untuk membersihkan token dan redirect.
+            return <div className="text-center p-20 text-red-500">
+                <p>Sesi kadaluarsa. Mohon tunggu sebentar, Anda dialihkan...</p>
+            </div>;
+        }
+        // -----------------------------------------------------
 
         const transactionsList = transactions?.data || [];
 
@@ -91,32 +104,43 @@ export default function MyTransactionsPage() {
                                         
                                         return (
                                             <TableRow key={tx.id} className="bg-white dark:border-gray-700 dark:bg-gray-800">
+                                                
+                                                {/* PERBAIKAN 1: BUNGKUS NAMA EVENT + TANGGAL */}
                                                 <TableCell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                                                    {tx.event.name || 'Nama Event'}
-                                                    <div className="text-xs text-gray-500">{new Date(tx.event.startDate).toLocaleDateString()}</div>
+                                                    <div> {/* Tambahkan wrapper div */}
+                                                        {tx.event.name || 'Nama Event'}
+                                                        <div className="text-xs text-gray-500">{new Date(tx.event.startDate).toLocaleDateString()}</div>
+                                                    </div>
                                                 </TableCell>
+                                                
                                                 <TableCell>{tx.ticketType.ticketName}</TableCell>
                                                 <TableCell>{tx.quantity}</TableCell>
+                                                
+                                                {/* PERBAIKAN 2: BUNGKUS HARGA TOTAL + POIN */}
                                                 <TableCell>
-                                                    Rp {tx.totalPrice.toLocaleString('id-ID')}
-                                                    {tx.pointsUsage && tx.pointsUsage.usedPoints > 0 && (
-                                                        <div className="text-xs text-green-500">(-{tx.pointsUsage.usedPoints.toLocaleString()} Poin)</div>
-                                                    )}
+                                                    <div> {/* Tambahkan wrapper div */}
+                                                        Rp {tx.totalPrice.toLocaleString('id-ID')}
+                                                        {tx.pointsUsage && tx.pointsUsage.usedPoints > 0 && (
+                                                            <div className="text-xs text-green-500">(-{tx.pointsUsage.usedPoints.toLocaleString()} Poin)</div>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
+                                                
+                                                {/* Kolom Status (Badge) */}
                                                 <TableCell>
                                                     <Badge color={status.color} icon={status.icon}>
                                                         {status.label}
                                                     </Badge>
                                                 </TableCell>
+                                                
+                                                {/* Kolom Aksi (Button) */}
                                                 <TableCell>
                                                     {isWaitingForPayment && (
-                                                        // Route ke halaman upload bukti bayar
                                                         <Button size="xs" color="warning" className="w-full" as={Link} href={`/transactions/${tx.id}/upload`}>
                                                             <HiOutlineUpload className="mr-2 h-4 w-4" /> Unggah Bukti
                                                         </Button>
                                                     )}
                                                     {tx.status === 'done' && (
-                                                        // TODO: Link ke E-Ticket
                                                         <Button size="xs" color="success" className="w-full">
                                                             Lihat E-Ticket
                                                         </Button>
