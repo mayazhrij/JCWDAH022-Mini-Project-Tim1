@@ -20,7 +20,7 @@ router.post(
 );
 // --- MENGAMBIL TRANSAKSI (Hanya User yang Login) ---
 router.get(
-    '/transactions/my', 
+    '/my', 
     authenticate, // Wajib login, tidak peduli role-nya
     getTransactionsByUser // Controller untuk mengambil data
 );
