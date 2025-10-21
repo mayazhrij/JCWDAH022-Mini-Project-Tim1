@@ -2,21 +2,6 @@ import { api } from './api';
 import { isAxiosError } from 'axios';
 import { CheckoutBody } from '@/types/transaction'; // Import interface
 
-export const getMyTransactions = async () => {
-    try {
-        const response = await api.get('/transactions/my');
-        return response.data.data; 
-    } catch (error) {
-        // --- PERBAIKAN: Type Narrowing untuk error ---
-        if (isAxiosError(error) && error.response) {
-            const errorMessage = error.response.data?.message;
-            throw errorMessage || `Gagal mengambil data transaksi (Status: ${error.response.status}).`;
-        }
-        console.error("Kesalahan Jaringan atau Unknown Error:", error);
-        throw 'Terjadi kesalahan jaringan atau kesalahan tak terduga.';
-    }
-};
-
 // Asumsi: Backend mengembalikan object { totalPrice, pointsUsed, countdown, ... }
 interface TransactionResponse {
     totalPrice: number;
@@ -54,7 +39,22 @@ export const createTransactionApi = async (data: CheckoutBody): Promise<Transact
     }
 };
 
-// --- TODO: Tambahkan service lain di file ini ---
-
-// export const getMyTransactions = async () => { ... }
+export const getMyTransactions = async () => {
+    try {
+        const response = await api.get('/transactions/my');
+        
+        // KRITIS: Pastikan Anda mengembalikan struktur data yang benar dari backend.
+        // Jika backend merespons { data: [...] }, pastikan Anda hanya mengembalikan itu.
+        
+        return response.data; // Mengembalikan objek penuh { data: [...] }
+        
+    } catch (error) {
+        // Jika status error adalah 401/403, ini berarti token invalid
+        if (isAxiosError(error) && error.response?.status === 401) {
+            // Ini akan memicu logic di useAuthGuard untuk membersihkan token dan redirect
+            throw new Error("Sesi kadaluarsa. Silakan login kembali.");
+        }
+        throw error;
+    }
+};
 // export const uploadPaymentProofApi = async (id, file) => { ... }
