@@ -8,6 +8,7 @@ import { createEventApi } from '@/services/event.service';
 import { EventCreationBody } from '@/types/event';
 import Header from '@/components/Headers';
 
+let ticketIdCounter = 1;
 // Interface untuk state dinamis tiket
 interface TicketState {
     id: number; // Untuk key React dan manipulasi array
@@ -23,7 +24,7 @@ export default function CreateEventPage() {
         // priceIdr: 0 dihapus karena dihitung di backend
     });
     const [ticketTypes, setTicketTypes] = useState<TicketState[]>([
-        { id: Date.now(), ticketName: 'Regular', ticketPrice: '', quota: '' }
+        { id: ticketIdCounter++, ticketName: 'Regular', ticketPrice: '', quota: '' } // Gunakan counter
     ]);
     
     const [error, setError] = useState('');
@@ -44,7 +45,7 @@ export default function CreateEventPage() {
     const addTicketType = () => {
         setTicketTypes(prevTickets => [
             ...prevTickets,
-            { id: Date.now(), ticketName: '', ticketPrice: '', quota: '' }
+            { id: ticketIdCounter++, ticketName: '', ticketPrice: '', quota: '' } // <-- Increment ID
         ]);
     };
 

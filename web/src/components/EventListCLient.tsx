@@ -25,6 +25,8 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
     const isAuthenticated = authStatus.isAuthenticated; // <-- Dapatkan status otentikasi
     const role = authStatus.role;
 
+    const isInitialLoadComplete = authStatus.isInitialLoadComplete;
+
     const [events, setEvents] = useState<EventResponse[]>(initialEvents);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +64,12 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
         <div className="flex flex-col gap-6">
             
             <div className="text-center p-4 border rounded-lg">
-                {isAuthenticated ? (
+                {!isInitialLoadComplete ? (
+                    <div className="flex flex-col items-center">
+                        <Spinner size="md" />
+                        <p className="text-sm mt-2">Memuat status sesi...</p>
+                    </div> ) : (
+                isAuthenticated ? (
                     // --- TAMPILAN JIKA SUDAH LOGIN (LOGOUT BUTTON) ---
                     <div className="flex flex-col items-center gap-2">
                         <p className="text-md text-gray-700 font-semibold">
@@ -84,6 +91,7 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                             </Button>
                         </Link>
                     </div>
+                    )
                 )}
             </div>
             

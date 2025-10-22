@@ -21,7 +21,7 @@ const EventCard: React.FC<EventProps> = ({ event }) => {
 
     return (
         <Card className="max-w-sm h-full hover:shadow-lg transition-shadow">
-            <Link href={`/events/${event.id}`}>
+            <Link href={`/events/detail?eventId=${event.id}`}>
                 <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white line-clamp-2">
                     {event.name}
                 </h5>
@@ -38,7 +38,7 @@ const EventCard: React.FC<EventProps> = ({ event }) => {
                 <Badge color="success">
                     {minPrice === 0 ? 'FREE' : `Start from Rp ${minPrice.toLocaleString('id-ID')}`}
                 </Badge>
-                <Link href={`/events/${event.id}`} passHref>
+                <Link href={`/events/detail?eventId=${event.id}`} passHref>
                     <Button size="sm">View Details</Button>
                 </Link>
             </div>
