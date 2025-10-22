@@ -120,8 +120,10 @@ export default function TransactionFlow() {
                                             {/* Aksi */}
                                             <td className="px-6 py-4 min-w-[140px]"> 
                                                 {isWaitingForPayment && (
-                                                    <Button size="xs" color="warning" className="w-full" as={Link} href={`/transactions/${tx.id}/upload`}>
-                                                        Unggah Bukti
+                                                    <Button size="xs" color="warning" className="w-full" as={Link} 
+                                                    href={`/transactions/payment-proof?txId=${tx.id}`} // <-- HARUS QUERY PARAMETER
+                                                    >
+                                                    Unggah Bukti
                                                     </Button>
                                                 )}
                                                 {tx.status === 'done' && (

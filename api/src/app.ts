@@ -73,9 +73,12 @@ app.use('/transactions', transactionRoutes);
 app.use('/promotions', promotionRoutes);
 app.use('/reviews', reviewRoutes);
 app.use('/profile', profileRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use('/uploads', express.static(path.join(__dirname, "../uploads")));
 app.use('/users', userRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use(express.json({ limit: '10mb' }));             
+// Batas payload untuk URL encoded data (penting untuk form data)
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
 
 // --- ROOT ROUTE (Opsional) ---

@@ -19,23 +19,12 @@ interface TransactionResponse {
 export const createTransactionApi = async (data: CheckoutBody): Promise<TransactionResponse> => {
     try {
         const response = await api.post('/transactions', data);
-        
-        // Mengembalikan data transaksi yang dibutuhkan frontend
-        return response.data as TransactionResponse;
-        
+        return response.data as TransactionResponse; // Mengembalikan data asli
     } catch (error) {
-        // --- Error Handling Kritis ---
         if (isAxiosError(error) && error.response) {
-            // Error dari backend (400 Bad Request, 404 Kuota Habis, 403 Forbidden)
-            const errorMessage = error.response.data?.message;
-            
-            // Melemparkan pesan error yang spesifik
-            throw new Error(errorMessage || `Checkout gagal dengan status: ${error.response.status}`);
+            throw new Error(error.response.data?.message || 'Gagal checkout. Kesalahan server.');
         }
-        
-        // Error jaringan atau tak terduga
-        console.error("Network or Unknown Checkout Error:", error);
-        throw new Error('Terjadi kesalahan jaringan atau server tidak merespons.');
+        throw new Error('Terjadi kesalahan jaringan.');
     }
 };
 
@@ -57,4 +46,30 @@ export const getMyTransactions = async () => {
         throw error;
     }
 };
-// export const uploadPaymentProofApi = async (id, file) => { ... }
+
+export const uploadPaymentProofApi = async (transactionId: string | null, file: File) => {
+    // Validasi Sederhana di Frontend
+    if (!transactionId) throw new Error("Transaction ID is missing from URL.");
+
+    try {
+        const formData = new FormData();
+        formData.append('paymentFile', file); 
+        formData.append('transactionId', transactionId); // <-- KRITIS: Kirim ID di BODY
+
+        const response = await api.post(`/transactions/payment-proof`, formData, {
+            headers: {
+                // Biarkan Axios menangani Content-Type untuk FormData
+                'Content-Type': 'multipart/form-data', 
+            }
+        });
+        return response.data;
+        
+    } catch (error) {
+        // ... (Error handling) ...
+        if (isAxiosError(error)) {
+             // Backend merespons pesan error yang spesifik
+            throw new Error(error.response?.data?.message || 'Gagal mengunggah. Kesalahan server.');
+        }
+        throw new Error('Terjadi kesalahan jaringan.');
+    }
+};

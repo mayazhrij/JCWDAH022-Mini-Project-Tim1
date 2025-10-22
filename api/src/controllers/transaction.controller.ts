@@ -120,23 +120,56 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
  * @access Private (Customer)
  */
 export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-    const transactionId = req.params.id;
-    const userId = req.user!.userId;
+    
+    // --- PERBAIKAN MUTLAK: Mengambil ID dari req.body (Form Data) ---
+    // ID Transaksi harus dikirim sebagai field 'transactionId' di form-data dari frontend.
+    const transactionId = (req.body.transactionId as string); 
+    // -------------------------------------------------------------
+
+    const userIdFromToken = req.user!.userId; 
+
+    // --- DEBUG KRITIS ---
+    console.log(`[DEBUG UPLOAD - FINAL FIX]: 
+    - Transaction ID (from Body): ${transactionId} 
+    - User ID from Token: ${userIdFromToken}`
+    );
+    // ----------------------
+    
+    // Asumsi: path file didapat dari req.file.path setelah Multer
+    // NOTE: req.body.paymentProofUrl hanya digunakan jika tidak ada file (untuk debugging non-multer)
     const paymentProofPath = (req as any).file?.path || req.body.paymentProofUrl; 
     
+    // Validasi 1: Pastikan ID Transaksi terkirim
+    if (!transactionId) {
+        // Ini adalah fix final yang seharusnya menangkap error karena frontend gagal mengirim ID di body
+         return res.status(400).json({ message: "ID Transaksi hilang dalam Body permintaan." });
+    }
+
+    // Validasi 2: Pastikan file terunggah
     if (!paymentProofPath) return res.status(400).json({ message: "Bukti pembayaran wajib diunggah." });
 
     try {
+        
+        // 3. Cari Transaksi
         const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
 
-        if (!transaction || transaction.userId !== userId) {
-            return res.status(404).json({ message: "Transaksi tidak ditemukan atau bukan milik Anda." });
+        if (!transaction) {
+            // Error ini akan muncul jika ID salah atau tidak ditemukan di DB
+            return res.status(404).json({ message: "Transaksi tidak ditemukan." });
         }
         
+        // Cek Otorisasi (Logic yang Gagal sebelumnya)
+        if (transaction.userId !== userIdFromToken) {
+            console.warn(`[SECURITY FAIL]: User Token ID ${userIdFromToken} does not match DB ID ${transaction.userId}`);
+            return res.status(403).json({ message: "Akses ditolak: Transaksi bukan milik Anda." });
+        }
+        
+        // Cek Status
         if (transaction.status !== TransactionStatus.waiting_payment) {
             return res.status(400).json({ message: "Transaksi tidak dalam status menunggu pembayaran." });
         }
 
+        // Logic upload yang sukses
         await prisma.transaction.update({
             where: { id: transactionId },
             data: {
@@ -148,11 +181,10 @@ export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promi
         return res.status(200).json({ message: "Bukti pembayaran berhasil diunggah. Menunggu konfirmasi organizer." });
 
     } catch (error) {
-        console.error("Error uploading payment proof:", error);
-        return res.status(500).json({ message: "Gagal mengunggah bukti pembayaran." });
+       console.error("Error uploading payment proof:", error);
+       return res.status(500).json({ message: "Gagal mengunggah bukti pembayaran." });
     }
 };
-
 // -----------------------------------------------------------------
 // 3. POST /transactions/:id/confirm (KONFIRMASI ADMIN)
 // -----------------------------------------------------------------
@@ -163,7 +195,7 @@ export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promi
  * @access Private/Organizer
  */
 export const confirmTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-    const transactionId = req.params.id;
+    const transactionId = req.params.txId;
     const { action } = req.body as ConfirmationBody;
     const organizerId = req.user!.userId; 
 
