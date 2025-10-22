@@ -9,17 +9,27 @@ export interface Transaction {
   id: string;
   eventId: string;
   userId: string;
-  status: 'waiting_payment' | 'accepted' | 'rejected';
-  paymentProof: string;
-  amount: number;
-  createdAt: Date;
+  user?: { name: string; email: string; id: string };
+  event?: { name: string; id: string };
+  status: 'waiting_payment' | 'waiting_confirmation' | 'done' | 'rejected' | 'expired' | 'canceled';
+  paymentProof: string | null;
+  totalPrice: number;
+  quantity: number;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface Event {
   id: string;
-  title: string;
-  date: Date;
-  seats: number;
+  name: string;
+  description?: string;
+  category: string;
+  location: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  priceIdr: number;
   availableSeats: number;
   organizerId: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
