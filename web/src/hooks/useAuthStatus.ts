@@ -4,13 +4,15 @@ interface AuthStatus {
     isAuthenticated: boolean;
     role: 'customer' | 'organizer' | null;
     userId: string | null;
-    isLoading: boolean; // Menandai bahwa proses verifikasi JWT sedang berjalan
+    // isLoading: true hanya saat SSR atau awal mount, kemudian disetel false
+    isLoading: boolean; 
+    // isInitialLoadComplete: true menandakan hook sudah selesai membaca localStorage
     isInitialLoadComplete: boolean; 
 }
 
 // Fungsi helper untuk mendapatkan status awal secara SYNCHRONOUS
 const getInitialStatus = (): AuthStatus => {
-    // 1. Jika kode berjalan di server (SSR)
+    // 1. Jika kode berjalan di server (SSR), kembalikan state paling NETRAL
     if (typeof window === 'undefined') {
         // Server tidak bisa membaca localStorage, jadi kita asumsikan sedang loading
         return { isAuthenticated: false, role: null, userId: null, isLoading: true, isInitialLoadComplete: false };
@@ -21,12 +23,12 @@ const getInitialStatus = (): AuthStatus => {
     const userRole = localStorage.getItem('user_role') as 'customer' | 'organizer' | null;
 
     if (token && userRole) {
-        // Token ada: Anggap VALID sementara (akan divalidasi penuh di useEffect)
+        // Client Side: Token ada. Anggap authenticated agar rendering UI sesuai.
         return { 
             isAuthenticated: true, 
             role: userRole, 
             userId: 'client_temp_id', 
-            isLoading: false, // Perubahan: Set isLoading ke FALSE di client jika token ada
+            isLoading: false, // Loading selesai
             isInitialLoadComplete: true 
         };
     }
@@ -42,23 +44,23 @@ const getInitialStatus = (): AuthStatus => {
 };
 
 export const useAuthStatus = (): AuthStatus => {
-    // 1. Ambil status awal SYNCHRONOUS
+    // 1. Ambil status awal SYNCHRONOUS (menghilangkan Hydration Mismatch)
     const [status, setStatus] = useState<AuthStatus>(getInitialStatus());
 
-    // 2. Gunakan useEffect untuk LOGIC ASINKRONUS (Verifikasi Token Sebenarnya)
+    // 2. Gunakan useEffect untuk LOGIC ASINKRONUS (Memperbaiki state SSR yang salah)
     useEffect(() => {
-        // Hanya verifikasi jika hook selesai dan status awal berbeda dari status saat ini
+        // Jika hook belum selesai loading (kondisi SSR), perbaiki state di client
         if (!status.isInitialLoadComplete) {
              const clientStatus = getInitialStatus();
              // Memperbaiki state SSR yang salah menjadi state client yang benar
              setStatus({ ...clientStatus, isLoading: false, isInitialLoadComplete: true });
-            return;
         }
-
-        // Logic untuk membersihkan token kadaluarsa (opsional jika tidak menggunakan verifyToken)
-        // Kita biarkan logic ini kosong karena sudah dihandle di page.tsx saat error SWR.
         
+        // Catatan: Jika Anda ingin memvalidasi token kadaluarsa ke backend, logic asinkronnya masuk di sini
+        // Tapi untuk MVP sederhana, kita biarkan logicnya synchronous.
+
     }, [status.isInitialLoadComplete]); 
 
     return status;
 };
+
