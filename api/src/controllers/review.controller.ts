@@ -76,3 +76,56 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<Res
         return res.status(500).json({ message: "Gagal memproses review." });
     }
 };
+
+export const getReviewStatus = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    const userId = req.user!.userId;
+    const eventId = req.query.eventId as string;
+
+    if (!eventId) {
+        return res.status(400).json({ message: "Event ID wajib diisi." });
+    }
+
+    try {
+        // 1. Cek Transaksi Selesai (Kehadiran)
+        const doneTransaction = await prisma.transaction.findFirst({
+            where: {
+                userId: userId,
+                eventId: eventId,
+                status: TransactionStatus.done, // Mencari status DONE
+            },
+            select: { id: true } // Hanya perlu tahu apakah ada
+        });
+
+        // 2. Cek Apakah Sudah Pernah Review
+        const existingReview = await prisma.review.findFirst({
+            where: { userId: userId, eventId: eventId },
+            select: { id: true }
+        });
+
+        let status: 'DONE' | 'PENDING' | 'NOT_FOUND' = 'NOT_FOUND';
+        
+        // Tentukan status akhir
+        if (doneTransaction) {
+             status = 'DONE'; // User hadir
+        } else {
+             // Cek apakah ada transaksi pending/expired
+             const pendingTx = await prisma.transaction.findFirst({
+                 where: { userId: userId, eventId: eventId, status: { in: [TransactionStatus.waiting_payment, TransactionStatus.waiting_confirmation] } }
+             });
+             if (pendingTx) {
+                 status = 'PENDING'; // User punya transaksi tapi belum selesai
+             }
+        }
+
+
+        // 3. Respon Status Review
+        return res.status(200).json({
+            status: status, // DONE, PENDING, atau NOT_FOUND
+            hasReviewed: !!existingReview // Menggunakan boolean untuk status review
+        });
+
+    } catch (error) {
+        console.error("Error checking review status:", error);
+        return res.status(500).json({ message: "Gagal memeriksa status kehadiran." });
+    }
+};

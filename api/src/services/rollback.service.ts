@@ -16,7 +16,7 @@ export const rollbackTransaction = async (transactionId: string) => {
         // Ambil data transaksi, kuota, dan penggunaan poin
         const transaction = await tx.transaction.findUnique({
             where: { id: transactionId },
-            include: { pointsUsage: true, ticketType: true } 
+            include: { pointsUsage: true, ticketType: { include: { event: true } } } 
         });
         
         if (!transaction) return;
@@ -27,6 +27,14 @@ export const rollbackTransaction = async (transactionId: string) => {
                 where: { id: transaction.ticketTypeId },
                 data: { quota: { increment: transaction.quantity } } // Tambahkan kembali kuota
             });
+        }
+
+        // 2. Rollback Kuota Total (EVENTS.AVAILABLE_SEATS)
+        if (transaction.ticketType?.event) {
+             await tx.event.update({
+                 where: { id: transaction.ticketType.event.id },
+                 data: { availableSeats: { increment: transaction.quantity } } // Tambahkan kembali kuota total
+             });
         }
 
         // 2. Rollback Poin (Menggunakan Tabel PointsUsage)

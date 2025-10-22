@@ -88,6 +88,12 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
                 data: { quota: { decrement: quantity } } 
             });
 
+             // C. PERBAIKAN KRITIS: PENGURANGAN KUOTA TOTAL (EVENTS.AVAILABLE_SEATS)
+            await tx.event.update({
+                where: { id: ticketType.eventId },
+                data: { availableSeats: { decrement: quantity } } // Kurangi kuota total
+            });
+
             // C. Mencatat Penggunaan Poin dan Mengurangi Saldo User
             if (pointsUsed > 0) {
                 await tx.pointsUsage.create({ data: { transactionId: transaction.id, usedPoints: pointsUsed, deductedAmount: deductedAmount } });

@@ -4,16 +4,15 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth1.middleware'; 
 import { createEvent, getEventListPublic, getEventDetailPublic } from '../controllers/event.controller'; 
 import { Role } from '../../generated/prisma'; // Import Enum Role dari Prisma
+import { createPromotion } from '../controllers/event.controller';
 
 const router = Router();
 
-// -------------------------------------------------------------------------
-// 1. ROUTE PUBLIC (Event Discovery)
-// -------------------------------------------------------------------------
-
-// GET /events/:id (Route ini harus ada untuk menangkap ID)
-router.get('/:id', getEventDetailPublic);
+// GET /events (Route Statis - Harus di atas route dinamis)
 router.get('/', getEventListPublic);
+
+// GET /events/:id (Route Dinamis - Diletakkan SETELAH route statis)
+router.get('/:id', getEventDetailPublic);
 
 
 // -------------------------------------------------------------------------
@@ -29,6 +28,13 @@ router.post(
     authenticate,          // Wajib: Cek apakah token ada dan valid
     authorize(Role.organizer), // Wajib: Cek apakah role di token adalah organizer
     createEvent
+);
+
+router.post(
+    '/promotions', // Path Statis
+    authenticate, 
+    authorize(Role.organizer), 
+    createPromotion
 );
 
 
