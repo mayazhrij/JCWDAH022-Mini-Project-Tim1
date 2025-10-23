@@ -76,6 +76,15 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                             Welcome, {role === 'organizer' ? 'Organizer' : 'Customer'}!
                         </p>
 
+                        {/* Organizer only: back to dashboard */}
+                        {role === 'organizer' && (
+                            <Link href='/organizer/dashboard' passHref>
+                                <Button size="sm" color="blue">
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        )}
+
                         {role === 'customer' && (
                                 <Link href="/transactions/my" passHref>
                                     <Button size="sm" color="blue">
@@ -93,11 +102,20 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                         <p className="mb-3 text-sm text-gray-700">
                             Please log in to access more features.
                         </p>
+
+                        <div className='flex flex-row items-center gap-3'>
                         <Link href="/login" passHref>
                             <Button size="sm" color="blue">
                                 Login / Register
                             </Button>
                         </Link>
+
+                        <Link href="/organizer/dashboard" passHref>
+                            <Button size="sm" color="blue">
+                                Organizer Dashboard
+                            </Button>
+                        </Link>
+                        </div>
                     </div>
                     )
                 )}

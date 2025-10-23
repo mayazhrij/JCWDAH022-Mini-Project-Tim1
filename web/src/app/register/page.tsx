@@ -112,7 +112,7 @@ export default function RegisterPage() {
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'customer' | 'organizer')}
                 disabled={isLoading}
-                className="block w-full p-2 border rounded"
+                className="block w-full p-2 border rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="customer">customer</option>
                 <option value="organizer">organizer</option>
