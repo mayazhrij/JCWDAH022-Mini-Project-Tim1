@@ -76,3 +76,17 @@ export const getEventDetail = async (eventId: string): Promise<EventDetailRespon
         throw new Error('Terjadi kesalahan jaringan atau kesalahan tak terduga.');
     }
 };
+
+// --- SERVICE BARU: MENGAMBIL EVENT MILIK ORGANIZER ---
+export const getOrganizerEvents = async () => {
+    try {
+        // Panggil endpoint backend yang baru dibuat
+        const response = await api.get('/events/organizer/events');
+        return response.data.data; 
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response?.data?.message || 'Gagal memuat event organizer.');
+        }
+        throw new Error('Terjadi kesalahan jaringan.');
+    }
+};

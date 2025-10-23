@@ -8,6 +8,7 @@ export interface EventResponse {
     startDate: string;
     endDate: string;
     // Ambil array dari ticketTypes yang Anda butuhkan
+    promotions: Array<{ title: string }>; 
     ticketTypes: Array<{ ticketPrice: number }>; 
     description: string;
     category: string;

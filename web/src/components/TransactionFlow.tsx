@@ -2,7 +2,7 @@
 
 import { Card, Badge, Button, Spinner, Alert } from 'flowbite-react';
 import React, { useState, useEffect } from 'react'; 
-import { HiCheckCircle, HiExclamation, HiXCircle, HiOutlineUpload, HiInformationCircle } from 'react-icons/hi';
+import { HiInformationCircle, HiArrowLeft } from 'react-icons/hi';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { getMyTransactions } from '@/services/transaction.service'; 
@@ -57,6 +57,11 @@ export default function TransactionFlow() {
 
     return (
         <div className="container mx-auto p-4 md:p-10 max-w-4xl w-full min-h-screen"> 
+        <Link href="/" passHref>
+                    <Button color="light" className="mb-6">
+                        <HiArrowLeft className="mr-2 h-5 w-5" /> Kembali ke Halaman Utama
+                    </Button>
+                </Link>
             <h1 className="text-3xl font-bold mb-6">Tiket dan Riwayat Transaksi Saya</h1>
             
             <Card className="w-full relative z-0"> 

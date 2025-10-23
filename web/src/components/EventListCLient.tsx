@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TextInput, Spinner, Button } from 'flowbite-react'; // Import Button
-import { HiSearch } from 'react-icons/hi';
+import { HiSearch, HiTicket } from 'react-icons/hi';
 import EventCard from './EventCard'; 
 import { getEvents } from '@/services/event.service'; 
 import { EventResponse } from '@/types/data'; 
@@ -75,6 +75,14 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                         <p className="text-md text-gray-700 font-semibold">
                             Welcome, {role === 'organizer' ? 'Organizer' : 'Customer'}!
                         </p>
+
+                        {role === 'customer' && (
+                                <Link href="/transactions/my" passHref>
+                                    <Button size="sm" color="blue">
+                                        <HiTicket className="mr-2 h-5 w-5" /> My Tickets
+                                    </Button>
+                                </Link> )}
+
                         <Button size="sm" color="blue" onClick={handleLogout}>
                             Log Out
                         </Button>

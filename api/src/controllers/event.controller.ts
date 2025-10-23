@@ -86,12 +86,14 @@ export const getEventListPublic = async (req: Request, res: Response): Promise<R
     const { q, category, location } = req.query; 
 
     try {
+        const now = new Date();
         const whereClause: any = {
             // Logika default: Hanya tampilkan event yang belum selesai
             endDate: {
-                gt: new Date(), // Hanya event yang end_date-nya lebih besar dari hari ini
+                gt: now // Hanya event yang end_date-nya lebih besar dari hari ini
             }
         };
+
 
         // 1. Logika Search Bar (q)
         if (q && typeof q === 'string') {
@@ -121,6 +123,13 @@ export const getEventListPublic = async (req: Request, res: Response): Promise<R
                     orderBy: { ticketPrice: 'asc' },
                     take: 1, 
                     select: { ticketPrice: true }
+                },
+                promotions: {
+                    where: {
+                        startDate: { lte: now }, // Sudah mulai
+                        endDate: { gte: now },   // Belum berakhir
+                    },
+                    select: { title: true }, // Ambil hanya judulnya
                 }
             },
             orderBy: {
@@ -150,8 +159,14 @@ export const getEventDetailPublic = async (req: Request, res: Response): Promise
         const event = await prisma.event.findUnique({
             where: { id: eventId },
             include: {
-                ticketTypes: true, // Ambil semua detail tiket
-                // Anda bisa tambahkan include untuk Organizer, Reviews, dll.
+                // Relasi lainnya...
+                
+                // --- PERBAIKAN KRITIS: Tambahkan OrderBy di TicketTypes ---
+                ticketTypes: {
+                    orderBy: {
+                        ticketPrice: 'asc', // Urutkan berdasarkan harga termurah (ascending)
+                    },
+                },
             }
         });
 
@@ -239,5 +254,28 @@ export const getActivePromotions = async (req: Request, res: Response): Promise<
 
     } catch (error) {
         return res.status(500).json({ message: "Gagal mengambil daftar promosi aktif." });
+    }
+};
+
+export const getOrganizerEvents = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    const organizerId = req.user!.userId;
+
+    try {
+        const events = await prisma.event.findMany({
+            where: { organizerId: organizerId },
+            include: {
+                ticketTypes: {
+                    select: { id: true, ticketName: true }
+                },
+                promotions: true 
+            },
+            orderBy: { startDate: 'asc' }
+        });
+
+        return res.status(200).json({ data: events });
+
+    } catch (error) {
+        console.error("Error fetching organizer events:", error);
+        return res.status(500).json({ message: "Gagal memuat daftar event Anda." });
     }
 };

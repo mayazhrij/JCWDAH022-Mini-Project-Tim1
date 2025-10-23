@@ -19,15 +19,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body>
+        {/* Navbar harus diletakkan di sini */}
+        
+        {/* Konten halaman utama */}
+        <div > {/* Tambahkan padding agar tidak tertutup Navbar */}
+            {children}
+        </div>
+        
+        {/* Opsional: SWR Provider jika digunakan di Client Components */}
       </body>
     </html>
   );
