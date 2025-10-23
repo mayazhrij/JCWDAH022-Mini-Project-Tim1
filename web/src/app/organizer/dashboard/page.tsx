@@ -12,8 +12,31 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/dist/client/link';
 import { Button } from 'node_modules/flowbite-react/dist/components/Button/Button';
 
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+
 export default function DashboardPage() {
   const router = useRouter();
+  
+  const { isAuthenticated, role, isInitialLoadComplete } = useAuthStatus();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  
+  // START REFACTOR: TAMBAH STATE UNTUK ERROR MESSAGE
+  const [accessError, setAccessError] = useState<string | null>(null);
+  // END REFACTOR
+  
+  useEffect(() => {
+    if (!isInitialLoadComplete) return;
+
+    if (!isAuthenticated || role !== 'organizer') {
+      // START REFACTOR: UBAH REDIRECT KE LOGIN PAGE
+      setAccessError('Please login only allowed access for Organizer role');
+      return;
+      // END REFACTOR
+    }
+
+    setIsAuthorized(true);
+  }, [isAuthenticated, role, isInitialLoadComplete, router]);
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -39,6 +62,49 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
+  // START REFACTOR: TAMBAH TAMPILAN PESAN ERROR SEBELUM REDIRECT
+  if (accessError) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-4">{accessError}</p>
+          
+          <button 
+            onClick={() => router.push('/login')} 
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Go to Login page Now
+          </button>
+
+          <button
+            onClick={() => router.push('/')}
+            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Go back to Home page
+          </button>
+
+
+        </div>
+      </div>
+    );
+  }
+  // END REFACTOR
+
+  // START REFACTOR: UBAH LOADING SCREEN AGAR TIDAK TAMPIL JIKA ADA ERROR
+  if (!isInitialLoadComplete || !isAuthorized) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
+  // END REFACTOR
+
   return (
     <>
       <OrganizerNavbar />
@@ -63,7 +129,7 @@ export default function DashboardPage() {
                 {stats ? <StatsChart stats={stats} /> : <div className="text-gray-500">No statistics available</div>}
               </div>
 
-              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8">    
+              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8 text-black">    
                 <Link href="/organizer/create" passHref>
                     <Button color="success">
                         <HiPlus className="mr-2 h-5 w-5" />
@@ -71,7 +137,7 @@ export default function DashboardPage() {
                     </Button>
                 </Link>
               </div>
-              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8">
+              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8 text-black">
               <Link href="/organizer/promote" passHref>
                     <Button color="success">
                         <HiPlus className="mr-2 h-5 w-5" />
