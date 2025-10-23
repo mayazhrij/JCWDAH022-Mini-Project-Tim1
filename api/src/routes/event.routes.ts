@@ -5,6 +5,8 @@ import { authenticate, authorize } from '../middlewares/auth1.middleware';
 import { createEvent, getEventListPublic, getEventDetailPublic } from '../controllers/event.controller'; 
 import { Role } from '../../generated/prisma'; // Import Enum Role dari Prisma
 import { createPromotion } from '../controllers/event.controller';
+import { getOrganizerEvents } from '../controllers/event.controller';
+
 
 const router = Router();
 
@@ -14,7 +16,13 @@ router.get('/', getEventListPublic);
 // GET /events/:id (Route Dinamis - Diletakkan SETELAH route statis)
 router.get('/:id', getEventDetailPublic);
 
-
+// ROUTE BARU: GET /organizer/events
+router.get(
+    '/organizer/events', 
+    authenticate, 
+    authorize(Role.organizer),
+    getOrganizerEvents // Controller untuk mengambil list event milik organizer
+);
 // -------------------------------------------------------------------------
 // 2. ROUTE PROTECTED (Event Creation)
 // -------------------------------------------------------------------------

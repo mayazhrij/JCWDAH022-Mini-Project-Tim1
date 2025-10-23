@@ -50,7 +50,7 @@ export default function EventDetailPage() {
 
     // --- LOGIC DISPLAY ---
     const avgRating = Number(eventData.ratings?.average) || 0;
-    const minPrice = eventData.ticketTypes[0]?.ticketPrice || 0;
+    const minPrice = eventData.ticketTypes?.[0]?.ticketPrice || 0;
     const isFree = minPrice === 0;
 
     // Helper untuk format tanggal (Hanya berjalan di client)
@@ -139,7 +139,7 @@ export default function EventDetailPage() {
                         {/* Tombol Beli / Login */}
                         <Link href={isAuthenticated 
                             ? `/checkout/${eventData.ticketTypes[0]?.id}` 
-                            : '/auth/login'} passHref>
+                            : '/login'} passHref>
                             <Button className="w-full mt-4" color="blue">
                                 <HiTicket className="mr-2 h-5 w-5" /> {isAuthenticated ? 'Beli Tiket' : 'Login untuk Beli Tiket'}
                             </Button>

@@ -15,3 +15,13 @@ export interface EventCreationBody {
     ticketTypes: TicketTypeInput[]; 
     // Anda bisa tambahkan field Promotion/etc. jika diperlukan
 }
+
+// Interface untuk data input saat membuat Promosi Waktu Murni
+export interface PromotionCreationBody {
+    eventId: string;
+    title: string;
+    description?: string;
+    startDate: string;
+    endDate: string;
+    // Karena solusinya Waktu Murni, field diskon tidak diperlukan di sini.
+}

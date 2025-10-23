@@ -2,7 +2,16 @@
 
 import { Card, Badge, Button } from 'flowbite-react';
 import Link from 'next/link';
-import { EventResponse } from '@/types/data';
+
+interface EventResponse {
+    id: string;
+    name: string;
+    location: string;
+    startDate: string;
+    // Tambahkan array promotions
+    promotions: Array<{ title: string }>; 
+    ticketTypes: Array<{ ticketPrice: number }>; 
+}
 
 interface EventProps {
     event: EventResponse;
@@ -18,6 +27,13 @@ const EventCard: React.FC<EventProps> = ({ event }) => {
     
     // Tentukan harga termurah untuk tampilan
     const minPrice = event.ticketTypes[0]?.ticketPrice || 0;
+    const isFree = minPrice === 0;
+
+    const isPromoting = event.promotions && event.promotions.length > 0;
+
+    const primaryBadge = isPromoting 
+        ? { color: 'pink', label: event.promotions[0].title.toUpperCase() } 
+        : { color: 'success', label: isFree ? 'GRATIS' : `Mulai dari Rp ${minPrice.toLocaleString('id-ID')}` };
 
     return (
         <Card className="max-w-sm h-full hover:shadow-lg transition-shadow">
@@ -35,8 +51,8 @@ const EventCard: React.FC<EventProps> = ({ event }) => {
                 </p>
             </div>
             <div className="mt-2 flex justify-between items-center">
-                <Badge color="success">
-                    {minPrice === 0 ? 'FREE' : `Start from Rp ${minPrice.toLocaleString('id-ID')}`}
+                <Badge color={primaryBadge.color as any}>
+                    {primaryBadge.label}
                 </Badge>
                 <Link href={`/events/detail?eventId=${event.id}`} passHref>
                     <Button size="sm">View Details</Button>

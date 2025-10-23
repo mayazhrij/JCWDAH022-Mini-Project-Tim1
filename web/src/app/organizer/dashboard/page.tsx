@@ -7,8 +7,10 @@ import StatsChart from '@/components/dashboard/StatsChart';
 import EventList from '@/components/dashboard/EventList';
 import TransactionList from '@/components/dashboard/TransactionList';
 import { DashboardStats, Event, Transaction } from '@/types/dashboard.types';
-import { HiArrowLeft } from 'react-icons/hi2';
+import { HiArrowLeft, HiPlus } from 'react-icons/hi2';
 import { useRouter } from 'next/navigation';
+import Link from 'next/dist/client/link';
+import { Button } from 'node_modules/flowbite-react/dist/components/Button/Button';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -59,6 +61,23 @@ export default function DashboardPage() {
               <div className="bg-white rounded-lg shadow p-6 mb-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Statistics</h2>
                 {stats ? <StatsChart stats={stats} /> : <div className="text-gray-500">No statistics available</div>}
+              </div>
+
+              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8">    
+                <Link href="/organizer/create" passHref>
+                    <Button color="success">
+                        <HiPlus className="mr-2 h-5 w-5" />
+                        Create New Event
+                    </Button>
+                </Link>
+              </div>
+              <div className="bg-gray-200 rounded-lg shadow p-6 mb-8">
+              <Link href="/organizer/promote" passHref>
+                    <Button color="success">
+                        <HiPlus className="mr-2 h-5 w-5" />
+                        Create Promotion Badge on Your Events
+                    </Button>
+                </Link>
               </div>
 
               {/* Events Section */}
