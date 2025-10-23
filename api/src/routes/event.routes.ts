@@ -6,7 +6,8 @@ import { createEvent, getEventListPublic, getEventDetailPublic } from '../contro
 import { Role } from '../../generated/prisma'; // Import Enum Role dari Prisma
 import { createPromotion } from '../controllers/event.controller';
 import { getOrganizerEvents } from '../controllers/event.controller';
-
+import { getTicketDetailController } from '../controllers/event.controller';
+import { updateEvent } from '../controllers/event.controller';
 
 const router = Router();
 
@@ -22,6 +23,12 @@ router.get(
     authenticate, 
     authorize(Role.organizer),
     getOrganizerEvents // Controller untuk mengambil list event milik organizer
+);
+
+router.get(
+    '/tickets/:id',
+    authenticate, 
+    getTicketDetailController // Controller yang baru Anda tambahkan
 );
 // -------------------------------------------------------------------------
 // 2. ROUTE PROTECTED (Event Creation)
@@ -45,6 +52,12 @@ router.post(
     createPromotion
 );
 
+router.put(
+    '/:id', 
+    authenticate, 
+    authorize(Role.organizer),
+    updateEvent
+);
 
 // Ekspor router agar dapat digunakan di app.ts
 export default router;

@@ -16,9 +16,9 @@ export default function TransactionList({ transactions, onUpdate }: Props) {
     try {
       await acceptTransaction(id);
       const updated = transactions.map(t =>
-        t.id === id ? { ...t, status: 'done' as Transaction['status'] } : t
+        t.id === id ? { ...t, status: 'done' as const } : t
       );
-      onUpdate(updated as Transaction[]);
+      onUpdate(updated);
       toast.success('Transaction accepted!');
     } catch (error) {
       toast.error('Failed to accept transaction');
@@ -29,9 +29,9 @@ export default function TransactionList({ transactions, onUpdate }: Props) {
     try {
       await rejectTransaction(id);
       const updated = transactions.map(t =>
-        t.id === id ? { ...t, status: 'rejected' as Transaction['status'] } : t
+        t.id === id ? { ...t, status: 'rejected' as const } : t
       );
-      onUpdate(updated as Transaction[]);
+      onUpdate(updated);
       toast.success('Transaction rejected!');
     } catch (error) {
       toast.error('Failed to reject transaction');
@@ -49,11 +49,11 @@ export default function TransactionList({ transactions, onUpdate }: Props) {
             </div>
             <div>
               <p className="text-xs text-gray-600">Amount</p>
-              <p className="font-semibold text-gray-900">Rp {(tx.amount || 0).toLocaleString()}</p>
+              <p className="font-semibold text-gray-900">Rp {(tx.totalPrice || 0).toLocaleString()}</p>
             </div>
             <div>
               <p className="text-xs text-gray-600">User</p>
-              <p className="font-semibold text-gray-900">{tx.userId?.slice(0, 8)}...</p>
+              <p className="font-semibold text-gray-900">{tx.user?.name || tx.userId?.slice(0, 8)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-600">Date</p>
@@ -73,7 +73,7 @@ export default function TransactionList({ transactions, onUpdate }: Props) {
           )}
 
           {/* Actions */}
-          {tx.status === 'waiting_payment' && (
+          {tx.status === 'waiting_confirmation' && (
             <div className="flex space-x-2">
               <button
                 onClick={() => handleAccept(tx.id)}

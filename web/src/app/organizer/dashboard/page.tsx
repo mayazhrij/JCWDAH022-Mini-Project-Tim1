@@ -46,7 +46,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
           <div className="flex items-center space-x-4 mb-8">
-            <button onClick={() => router.back()} className="text-gray-600 hover:text-gray-900">
+            <button onClick={() => router.push("/")} className="text-gray-600 hover:text-gray-900">
               <HiArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-3xl font-bold text-gray-900">Organizer Dashboard</h1>

@@ -34,17 +34,17 @@ export default function EventList({ events, onUpdate }: Props) {
             <div className="space-y-3">
               <input
                 type="text"
-                value={editData.title || ''}
-                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Event title"
+                value={editData.name || ''}
+                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
+                placeholder="Event name"
               />
               <input
                 type="number"
-                value={editData.seats || ''}
-                onChange={(e) => setEditData({ ...editData, seats: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                placeholder="Total seats"
+                value={editData.availableSeats || ''}
+                onChange={(e) => setEditData({ ...editData, availableSeats: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black"
+                placeholder="Available seats"
               />
               <div className="flex space-x-2">
                 <button onClick={handleEdit} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
@@ -58,9 +58,10 @@ export default function EventList({ events, onUpdate }: Props) {
           ) : (
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
-                <p className="text-gray-600">{event.date ? new Date(event.date).toLocaleDateString() : 'N/A'}</p>
-                <p className="text-sm text-gray-500">Available seats: {event.availableSeats}/{event.seats}</p>
+                <h3 className="text-lg font-semibold text-gray-900">{event.name}</h3>
+                <p className="text-gray-600">{event.startDate ? new Date(event.startDate).toLocaleDateString() : 'N/A'}</p>
+                <p className="text-sm text-gray-500">Location: {event.location}</p>
+                <p className="text-sm text-gray-500">Available seats: {event.availableSeats}</p>
               </div>
               <button
                 onClick={() => {
