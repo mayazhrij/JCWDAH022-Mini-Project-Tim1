@@ -56,7 +56,7 @@ router.post(
 
 // POST /transactions/:id/confirm - Konfirmasi oleh Organizer
 router.post(
-    '/confirm', 
+    '/:id/confirm', 
     authenticate, 
     authorize(Role.organizer),
     confirmTransaction

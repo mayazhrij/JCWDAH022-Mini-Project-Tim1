@@ -201,12 +201,18 @@ export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promi
  * @access Private/Organizer
  */
 export const confirmTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-    const transactionId = req.params.txId;
+    const transactionId = req.params.id;
     const { action } = req.body as ConfirmationBody;
     const organizerId = req.user!.userId; 
 
     if (action !== 'accept' && action !== 'reject') {
         return res.status(400).json({ message: "Aksi tidak valid. Gunakan 'accept' atau 'reject'." });
+    }
+
+    if (!transactionId) {
+        // Log ini akan muncul jika req.params.id adalah undefined
+        console.error("CRASH FIX: Transaction ID from params is missing.");
+        return res.status(400).json({ message: "ID Transaksi wajib ada di URL." });
     }
 
     try {
@@ -216,9 +222,18 @@ export const confirmTransaction = async (req: AuthRequest, res: Response): Promi
             include: { event: { select: { organizerId: true } } } 
         });
 
-        if (!transaction || transaction.event.organizerId !== organizerId) {
-             // Validasi Keamanan Ganda: Hanya pemilik Event yang boleh konfirmasi
-            return res.status(403).json({ message: "Akses terlarang. Anda bukan organizer event ini." });
+        if (!transaction) {
+            return res.status(404).json({ message: "Transaksi tidak ditemukan." });
+        }
+
+        if (!transaction.event) {
+             console.error(`[CRASH]: Transaction ${transactionId} has no linked Event.`);
+             return res.status(500).json({ message: "Gagal memproses konfirmasi: Data Event Hilang." });
+        }
+
+        if (!transaction.event || transaction.event.organizerId !== organizerId) { 
+             console.warn(`[SECURITY FAIL]: Organizer ${organizerId} tried to hijack transaction.`);
+             return res.status(403).json({ message: "Akses ditolak: Anda bukan organizer event ini." }); 
         }
         
         if (transaction.status !== TransactionStatus.waiting_confirmation) {
