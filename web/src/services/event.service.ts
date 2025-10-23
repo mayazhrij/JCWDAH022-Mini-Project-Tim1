@@ -90,3 +90,30 @@ export const getOrganizerEvents = async () => {
         throw new Error('Terjadi kesalahan jaringan.');
     }
 };
+
+export interface TicketTypeInput {
+    ticketName: string;
+    ticketPrice: number;
+    quota: number;
+}
+
+
+interface UpdateEventPayload {
+    name?: string;
+    description?: string;
+    newTicketTypes?: TicketTypeInput[];
+    // Anda bisa tambahkan field lain yang diizinkan diupdate di backend
+}
+
+export const updateEventApi = async (eventId: string, data: UpdateEventPayload) => {
+    try {
+        // Panggil endpoint backend PUT /events/:id
+        const response = await api.put(`/events/${eventId}`, data); 
+        return response.data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response?.data?.message || 'Gagal memperbarui event.');
+        }
+        throw new Error('Terjadi kesalahan jaringan.');
+    }
+};
