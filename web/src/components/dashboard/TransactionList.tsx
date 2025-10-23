@@ -98,7 +98,14 @@ export default function TransactionList({ transactions, onUpdate }: Props) {
       {viewProof && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
-            <img src={viewProof} alt="Payment proof" className="w-full rounded-lg" />
+            <img 
+              src={`${process.env.NEXT_PUBLIC_API_URL}${viewProof.startsWith('/') ? '' : '/'}${viewProof}`} 
+              alt="Payment proof" 
+              className="w-full rounded-lg"
+              onError={(e) => {
+                e.currentTarget.alt = 'Image failed to load';
+              }}
+            />
             <button
               onClick={() => setViewProof(null)}
               className="mt-4 w-full px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400"
