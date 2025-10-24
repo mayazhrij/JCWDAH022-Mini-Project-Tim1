@@ -3,21 +3,16 @@
 import React, { useState } from 'react';
 import { Card, Button, FileInput, Label, Alert, Spinner } from 'flowbite-react';
 import { HiArrowLeft, HiInformationCircle, HiCloudUpload } from 'react-icons/hi';
-import { useRouter, useSearchParams } from 'next/navigation'; // WAJIB: Import useSearchParams
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
-// Asumsi: Service sudah diimplementasikan di transaction.service.ts
 import { uploadPaymentProofApi } from '@/services/transaction.service'; 
 import { useAuthStatus } from '@/hooks/useAuthStatus'; 
 
-// Halaman ini tidak lagi menggunakan params.id dari URL path, tapi dari query parameter
 export default function UploadPaymentPage({ params }: { params: { id: string } }) {
     const router = useRouter();
-    
-    // --- PERBAIKAN: Mengambil ID dari QUERY PARAMETER ---
+
     const searchParams = useSearchParams();
-    const transactionId = searchParams.get('txId'); // <-- ID diambil dari Query Parameter
-    // ------------------------------------
+    const transactionId = searchParams.get('txId');
     
     const { isAuthenticated, isInitialLoadComplete } = useAuthStatus();
     
@@ -26,9 +21,8 @@ export default function UploadPaymentPage({ params }: { params: { id: string } }
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Guard: Jika belum selesai loading atau belum authenticated, blokir akses
     if (!isInitialLoadComplete || !isAuthenticated) {
-        return <div className="text-center p-20 min-h-screen"><Spinner size="xl" /><p>Memverifikasi sesi...</p></div>;
+        return <div className="text-center p-20 min-h-screen"><Spinner size="xl" /><p>Verifying Session...</p></div>;
     }
 
 
@@ -38,30 +32,24 @@ export default function UploadPaymentPage({ params }: { params: { id: string } }
         setSuccess('');
 
         if (!selectedFile) {
-            setError('Mohon pilih file bukti pembayaran.');
+            setError('Please select a payment proof screenshot to upload.');
             return;
         }
-        // Validasi ID Mutlak
         if (!transactionId) {
-             setError('Error: ID Transaksi tidak ditemukan. Mohon kembali ke riwayat.');
+             setError('Error: Transaction ID not found. Please return to history.');
              return;
         }
 
         setIsLoading(true);
         try {
-            // Panggil API Upload
-            // Mengirim ID Transaksi yang diambil dari query parameter
-            await uploadPaymentProofApi(transactionId, selectedFile); 
-            
-            setSuccess('Bukti pembayaran berhasil diunggah! Anda akan dialihkan.');
-            
+            await uploadPaymentProofApi(transactionId, selectedFile);
+            setSuccess('Payment proof uploaded successfully! You will be redirected.');
             setTimeout(() => {
                 router.push('/transactions/my');
             }, 2000);
 
         } catch (e: any) {
-            // Tampilkan error dari backend
-            setError(e.message || 'Gagal mengunggah bukti. Silakan coba lagi.');
+            setError(e.message || 'Failed to upload payment proof. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -70,9 +58,8 @@ export default function UploadPaymentPage({ params }: { params: { id: string } }
     return (
         <div className="flex justify-center min-h-screen py-10 bg-gray-50">
             <Card className="max-w-md w-full">
-                <h1 className="text-2xl font-bold text-center mb-6">Unggah Bukti Pembayaran</h1>
-                {/* Tampilkan ID Transaksi yang sedang diproses */}
-                <p className="text-center text-sm text-gray-600 mb-6">ID Transaksi: {transactionId || 'Menunggu ID...'}</p> 
+                <h1 className="text-2xl font-bold text-center mb-6">Upload Payment Proof</h1>
+                <p className="text-center text-sm text-gray-600 mb-6">Transaction ID: {transactionId || 'Waiting for ID...'}</p>
 
                 {error && <Alert color="failure" icon={HiInformationCircle} className="mb-4">{error}</Alert>}
                 {success && <Alert color="success" className="mb-4">{success}</Alert>}
@@ -81,7 +68,7 @@ export default function UploadPaymentPage({ params }: { params: { id: string } }
                     
                     <div>
                         <div className="mb-2 block">
-                            <Label htmlFor="file-upload">Pilih File Bukti (Max 2MB)</Label>
+                            <Label htmlFor="file-upload">Select Payment Proof (Max 2MB)</Label>
                         </div>
                         <FileInput 
                             id="file-upload" 
@@ -90,22 +77,22 @@ export default function UploadPaymentPage({ params }: { params: { id: string } }
                             disabled={isLoading}
                         />
                          <div className="mt-2 text-sm text-gray-500">
-                             {selectedFile ? selectedFile.name : 'JPEG, PNG, atau PDF'}
+                             {selectedFile ? selectedFile.name : 'JPEG, PNG, or PDF'}
                         </div>
                     </div>
                     
                     <Button 
                         type="submit" 
-                        disabled={isLoading || !selectedFile || !transactionId} // Tambahkan !transactionId di disabled
+                        disabled={isLoading || !selectedFile || !transactionId}
                         className="mt-2"
                     >
                         <HiCloudUpload className="mr-2 h-5 w-5" />
-                        {isLoading ? 'Mengunggah...' : 'Konfirmasi Upload'}
+                        {isLoading ? 'Uploading...' : 'Upload Confirmed'}
                     </Button>
                     
                     <Link href="/transactions/my" passHref>
                         <Button color="light" size="sm">
-                            <HiArrowLeft className="mr-2 h-5 w-5" /> Kembali ke Riwayat
+                            <HiArrowLeft className="mr-2 h-5 w-5" /> Back to Transaction History
                         </Button>
                     </Link>
                 </form>

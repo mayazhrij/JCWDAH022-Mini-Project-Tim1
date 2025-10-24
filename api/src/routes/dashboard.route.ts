@@ -3,7 +3,7 @@ import { authenticate } from '../middlewares/auth1.middleware';
 import { getDashboardStats, getEvents, updateEvent, getTransactions, acceptTransaction, rejectTransaction } from '../controllers/dashboard.controller';
 
 const router = Router();
-router.use(authenticate); // Middleware auth
+router.use(authenticate);
 router.get('/stats', getDashboardStats);
 router.get('/events', getEvents);
 router.put('/events/:id', updateEvent);

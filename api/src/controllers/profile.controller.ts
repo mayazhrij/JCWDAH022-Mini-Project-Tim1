@@ -4,8 +4,8 @@ import { Response } from "express";
 import { Request } from "express";
 import fs from "fs";
 import path from "path";
-import bcrypt from "bcrypt";  // Tambah import bcrypt
-import jwt from "jsonwebtoken";  // Tambah import jwt
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken"; 
 import { sendResetPasswordEmail } from "../utils/email"; 
 
 type UserProfilePicture = { profilePicture: string | null };
@@ -91,7 +91,6 @@ export const resetPassword = async (req: Request, res: Response) => {
             }
         });
 
-        // * Implementasi kirim email (gunakan nodemailer)
         await sendResetPasswordEmail(email, resetToken);
 
         res.json({ message: "Reset password email sent" });

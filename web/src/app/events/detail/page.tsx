@@ -9,28 +9,25 @@ import Link from 'next/link';
 
 import { getEventDetail } from '@/services/event.service'; 
 import { useAuthStatus } from '@/hooks/useAuthStatus'; 
-import ReviewForm from '@/components/ReviewForm'; // Komponen Review
+import ReviewForm from '@/components/ReviewForm';
 import { EventDetailResponse } from '@/services/event.service'; 
 
 export default function EventDetailPage() {
     const router = useRouter();
     const { isAuthenticated, isInitialLoadComplete, role } = useAuthStatus();
     
-    // --- FIX HYDRATION: State untuk Mount ---
+
     const [isClient, setIsClient] = useState(false);
     useEffect(() => {
         setIsClient(true);
     }, []);
-    // ----------------------------------------
-    
-    // --- MENGAMBIL EVENT ID DARI QUERY PARAMETER ---
+
     const searchParams = useSearchParams();
     const eventId = searchParams.get('eventId');
     
-    // Guard awal: Jika ID event tidak ditemukan di URL
     if (!eventId) {
         return <div className="text-center p-20 min-h-screen text-red-500">
-            <Alert color="failure" icon={HiInformationCircle}>Event ID hilang. Tidak dapat memuat detail.</Alert>
+            <Alert color="failure" icon={HiInformationCircle}>Event ID missing. Unable to load details.</Alert>
         </div>;
     }
     
@@ -42,18 +39,16 @@ export default function EventDetailPage() {
 
     // --- LOGIC LOADING & ERROR HANDLING ---
     if (!isInitialLoadComplete || isLoading) {
-        return <div className="text-center p-20 min-h-screen"><Spinner size="xl" /><p>Memuat detail event...</p></div>;
+        return <div className="text-center p-20 min-h-screen"><Spinner size="xl" /><p>Loading event details...</p></div>;
     }
     if (error || !eventData) {
-        return <div className="text-center p-20 text-red-500"><Alert color="failure">Event tidak ditemukan: {error?.message || 'Error koneksi'}</Alert></div>;
+        return <div className="text-center p-20 text-red-500"><Alert color="failure">Event not found: {error?.message || 'Connection error'}</Alert></div>;
     }
 
-    // --- LOGIC DISPLAY ---
     const avgRating = Number(eventData.ratings?.average) || 0;
     const minPrice = eventData.ticketTypes?.[0]?.ticketPrice || 0;
     const isFree = minPrice === 0;
 
-    // Helper untuk format tanggal (Hanya berjalan di client)
     const formatDate = (dateString: string) => {
         if (!isClient) return '...'; 
         try {
@@ -69,7 +64,7 @@ export default function EventDetailPage() {
     return (
         <div className="container mx-auto p-4 md:p-10 max-w-4xl">
             <Button color="light" onClick={() => router.back()} className="mb-6">
-                <HiArrowLeft className="mr-2 h-5 w-5" /> Kembali
+                <HiArrowLeft className="mr-2 h-5 w-5" /> Back
             </Button>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -89,12 +84,12 @@ export default function EventDetailPage() {
                     </div>
 
                     <Card className="mb-6">
-                         <h5 className="text-2xl font-bold">Deskripsi Event</h5>
+                         <h5 className="text-2xl font-bold">Event Description</h5>
                          <p className="text-gray-700">{eventData.description}</p>
                     </Card>
 
                     {/* --- Bagian Ulasan --- */}
-                    <h2 className="text-2xl font-bold mb-4 mt-8">Ulasan & Rating</h2>
+                    <h2 className="text-2xl font-bold mb-4 mt-8">Rating & Reviews</h2>
                     
                     {isAuthenticated && role === 'customer' && (
                         <ReviewForm />
@@ -103,7 +98,7 @@ export default function EventDetailPage() {
                     {/* List Ulasan */}
                     {/* PERBAIKAN KRITIS: Melindungi akses .length */}
                     {eventData.reviews?.length === 0 ? ( 
-                        <p className="text-gray-500 mt-4">Belum ada ulasan untuk event ini.</p>
+                        <p className="text-gray-500 mt-4">There are no reviews for this event yet.</p>
                     ) : (
                         <div className="space-y-4 mt-4">
                             {/* Memastikan reviews ada sebelum map */}
@@ -129,12 +124,12 @@ export default function EventDetailPage() {
                 {/* --- Kolom Kanan: Tiket & Checkout --- */}
                 <div className="md:col-span-1 space-y-6">
                     <Card className="bg-blue-50">
-                        <h5 className="text-xl font-bold text-gray-800">Harga Tiket</h5>
+                        <h5 className="text-xl font-bold text-gray-800">Ticket Price</h5>
                         <p className="text-3xl font-extrabold text-blue-700">
-                            {isFree ? 'GRATIS' : `Rp ${minPrice.toLocaleString('id-ID')}`}
+                            {isFree ? 'FREE' : `Rp ${minPrice.toLocaleString('id-ID')}`}
                         </p>
                         {/* PERBAIKAN KRITIS: Menggunakan Optional Chaining pada organizer */}
-                        <p className="text-sm text-gray-500 mt-2">Diselenggarakan oleh: {eventData.organizer?.name || 'Unknown Organizer'}</p>
+                        <p className="text-sm text-gray-500 mt-2">Organized by: {eventData.organizer?.name || 'Unknown Organizer'}</p>
                         
                         {/* Tombol Beli / Login */}
                         <Link href={isAuthenticated 
@@ -148,7 +143,7 @@ export default function EventDetailPage() {
 
                     {/* Detail Jenis Tiket */}
                     <Card>
-                        <h5 className="text-lg font-bold mb-3">Jenis Tiket Tersedia</h5>
+                        <h5 className="text-lg font-bold mb-3">Available Ticket Types</h5>
                         <div className="space-y-2">
                             {/* Memastikan ticketTypes ada sebelum map */}
                             {eventData.ticketTypes?.map(ticket => (
@@ -161,11 +156,10 @@ export default function EventDetailPage() {
                         </div>
                     </Card>
 
-                    {/* Ringkasan Rating Organizer */}
+                    {/* Ringkasan Rating Event */}
                     <Card className="flex flex-col items-center text-center">
-                        <h5 className="text-lg font-bold mb-2">Rating Organizer</h5>
+                        <h5 className="text-lg font-bold mb-2">Event Rating</h5>
                         <div className="flex items-center gap-2 text-yellow-500 text-2xl">
-                             {/* FIX 3: Rating Bintang hanya di-render saat Client mounted */}
                              {isClient ? (
                                 <Rating>
                                     {[...Array(5)].map((_, i) => (
@@ -177,7 +171,7 @@ export default function EventDetailPage() {
                              }
                             <span className="font-extrabold text-gray-800">{avgRating.toFixed(2)}</span>
                         </div>
-                        <p className="text-sm text-gray-500">Dari {eventData.ratings?.totalReviews || 0} ulasan</p>
+                        <p className="text-sm text-gray-500">From {eventData.ratings?.totalReviews || 0} reviews</p>
                     </Card>
                 </div>
             </div>

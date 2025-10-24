@@ -25,10 +25,10 @@ export default function PromotionFormPage() {
          return (
             <div className="text-center p-20 min-h-screen max-w-4xl mx-auto">
                 <Alert color="failure" icon={HiInformationCircle}>
-                    ID Event tidak ditemukan di URL. Silakan kembali ke halaman pemilihan event.
+                    Event ID not found in URL. Please return to the event selection page.
                 </Alert>
                 <Button color="light" onClick={() => router.back()} className="mt-4">
-                    <HiArrowLeft className="mr-2 h-5 w-5" /> Kembali
+                    <HiArrowLeft className="mr-2 h-5 w-5" /> Back
                 </Button>
             </div>
          );
@@ -37,7 +37,6 @@ export default function PromotionFormPage() {
 
     return (
         <div className="flex justify-center min-h-screen py-10 bg-gray-50">
-            {/* Component PromotionForm menerima eventId sebagai prop */}
             <PromotionForm eventId={eventId} /> 
         </div>
     );

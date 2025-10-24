@@ -141,7 +141,7 @@ export default function DashboardPage() {
               <Link href="/organizer/promote" passHref>
                     <Button color="success">
                         <HiPlus className="mr-2 h-5 w-5" />
-                        Create Promotion Badge on Your Events
+                        Add Promotion for Your Event
                     </Button>
                 </Link>
               </div>

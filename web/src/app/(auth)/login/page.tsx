@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Label, TextInput, Button, Alert } from 'flowbite-react';
-import { HiInformationCircle } from 'react-icons/hi'; // Contoh ikon dari heroicons
-import { login } from '@/services/auth.service'; // Sesuaikan path import
+import { HiInformationCircle } from 'react-icons/hi';
+import { login } from '@/services/auth.service';
 import Header from '@/components/Headers';
 
 export default function LoginPage() {
@@ -20,30 +20,24 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // 1. Panggil API Login
       const user = await login({ email, password });
       
-      // 2. Jika berhasil, redirect sesuai role (Conditional Redirect)
       if (user.role === 'organizer') {
-        router.push('/organizer/dashboard'); // Redirect Organizer
+        router.push('/organizer/dashboard');
       } else {
-        router.push('/'); // Redirect Customer ke homepage
+        router.push('/');
       }
 
     } catch (error) {
         let errorMessage: string;
 if (typeof error === 'string') {
-        // Jika service Anda melempar string (seperti yang kita desain)
         errorMessage = error;
     } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-        // Untuk error standar (misalnya TypeError atau sejenisnya)
         errorMessage = error.message; 
     } else {
-        // Default jika tipe error tidak terduga
         errorMessage = 'Terjadi kesalahan tidak terduga saat login.';
     }
 
-    // 2. Berikan string yang aman ke setError
     setError(errorMessage);
     
 } finally {
@@ -68,7 +62,7 @@ if (typeof error === 'string') {
           {/* Email Input */}
           <div>
             <div className="mb-2 block">
-              <Label htmlFor="email">Your Email</Label> {/* Teks diletakkan di sini */}
+              <Label htmlFor="email">Your Email</Label>
             </div>
             <TextInput
               id="email"
@@ -81,7 +75,6 @@ if (typeof error === 'string') {
             />
           </div>
 
-          {/* Password Input */}
           <div>
             <div className="mb-2 block">
               <Label htmlFor="password">Your Password</Label>
@@ -96,9 +89,7 @@ if (typeof error === 'string') {
             />
           </div>
           
-          {/* Tombol Submit (Sudah Diperbaiki) */}
           <Button type="submit" disabled={isLoading}>
-            {/* Logic children tetap ada untuk menampilkan status loading */}
             {isLoading ? 'Loading...' : 'Log In'}
           </Button>
 

@@ -151,32 +151,74 @@ export const getEventListPublic = async (req: Request, res: Response): Promise<R
     }
 };
 
+/**
+ * @route GET /events/:id
+ * @desc Mengambil detail event lengkap, termasuk organizer dan rating.
+ * @access Public
+ */
 export const getEventDetailPublic = async (req: Request, res: Response): Promise<Response | void> => {
-    // 1. Ambil ID dari URL parameter
-    const eventId = req.params.id; 
+    const eventId = req.params.id;
 
     try {
-        // 2. Query Event BESERTA semua detail TicketTypes
+        // Ambil detail event, termasuk data organizer (User)
         const event = await prisma.event.findUnique({
             where: { id: eventId },
             include: {
-                // Relasi lainnya...
+                // Relasi Organizer (untuk mendapatkan NAMA organizer)
+                organizer: { 
+                    select: { 
+                        id: true,
+                        name: true, // KRITIS: Ambil field 'name' dari model User
+                    } 
+                },
                 
-                // --- PERBAIKAN KRITIS: Tambahkan OrderBy di TicketTypes ---
+                // Relasi Review (untuk menghitung rating)
+                reviews: {
+                    select: { rating: true, comment: true, id: true, userId: true } // Ambil data lengkap review
+                },
+                
+                // Relasi Ticket Types (wajib untuk harga termurah dan kuota)
                 ticketTypes: {
                     orderBy: {
-                        ticketPrice: 'asc', // Urutkan berdasarkan harga termurah (ascending)
+                        ticketPrice: 'asc', // Urutkan berdasarkan harga termurah
                     },
                 },
-            }
+            },
         });
 
         if (!event) {
-            // Jika ID tidak ditemukan di DB, respons yang benar adalah 404
             return res.status(404).json({ message: "Detail event tidak ditemukan." });
         }
 
-        return res.status(200).json({ data: event });
+        // --- HITUNG RATING ORGANIZER ---
+        
+        const totalReviews = event.reviews.length;
+        const sumOfRatings = event.reviews.reduce((sum, review) => sum + review.rating, 0);
+        const averageRating = totalReviews > 0 ? (sumOfRatings / totalReviews) : 0;
+        
+        // --- CLEANUP RESPONSE ---
+        // Pisahkan reviews mentah agar tidak dikirim di root object
+        const { reviews, organizer, ...eventData } = event;
+
+        const responseData = {
+            ...eventData,
+            // Perbaikan struktur organizer untuk frontend
+            organizer: {
+                id: organizer.id,
+                name: organizer.name,
+            },
+            // Tambahkan objek rating teragregasi
+            ratings: {
+                average: parseFloat(averageRating.toFixed(2)),
+                totalReviews: totalReviews,
+            },
+            // Tambahkan array reviews yang sudah difilter/diambil
+            reviews: reviews,
+            // Pastikan ticketTypes juga dikembalikan
+            ticketTypes: event.ticketTypes,
+        };
+
+        return res.status(200).json({ data: responseData });
 
     } catch (error) {
         console.error("Error fetching event detail:", error);
@@ -221,13 +263,13 @@ export const updateEvent = async (req: AuthRequest, res: Response): Promise<Resp
             // 2. Logic Tambah Tiket Baru 
             if (newTicketTypes && newTicketTypes.length > 0) {
                 const ticketsToCreate = newTicketTypes.map(ticket => {
-                    seatsChange += Number(ticket.quota);
+                    const quotaAmount = Number(ticket.quota);
+                    seatsChange += quotaAmount;
                     return {
                         eventId: eventId,
                         ticketName: ticket.ticketName,
                         ticketPrice: Number(ticket.ticketPrice),
-                        quota: Number(ticket.quota),
-                        availableSeats: Number(ticket.quota)
+                        quota: quotaAmount,
                     };
                 });
                 
@@ -381,10 +423,16 @@ export const getTicketDetailController = async (req: AuthRequest, res: Response)
         // 2. Ambil SEMUA Detail Event dan Semua Jenis Tiket
         const eventDetail = await prisma.event.findUnique({
             where: { id: eventId },
-            include: {
-                ticketTypes: true, // WAJIB: Ambil semua jenis tiket (quota, price, etc.)
-                organizer: { select: { name: true } },
-                // ... include relasi lain yang dibutuhkan checkout (misal: lokasi, deskripsi)
+            // PERBAIKAN: Gunakan select untuk memastikan field dasar event yang dibutuhkan terambil
+            select: {
+                id: true,
+                name: true, // KRITIS: Nama Event, sekarang dijamin terambil
+                startDate: true, // Data vital untuk checkout
+                location: true, // Data vital untuk checkout
+                priceIdr: true, // Jika event berbayar (base price)
+                
+                ticketTypes: true, // Ambil relasi Ticket Types (semua jenis tiket)
+                organizer: { select: { name: true } }, // Ambil relasi organizer (hanya nama)
             }
         });
         
@@ -393,7 +441,7 @@ export const getTicketDetailController = async (req: AuthRequest, res: Response)
         }
         
         // Response Sukses: Kembalikan Event Detail (yang mencakup semua tiket)
-        // Kita mengembalikan eventDetail secara langsung untuk digunakan frontend
+        // Frontend akan mengakses nama event di: data.name
         return res.status(200).json({ data: eventDetail });
 
     } catch (error) {
