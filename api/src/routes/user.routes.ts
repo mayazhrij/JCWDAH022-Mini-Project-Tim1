@@ -5,11 +5,18 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../middlewares/auth1.middleware';
 import { addPoints } from '../controllers/user1.controller';
 import { Role } from '../../generated/prisma'; // Import Role
+import { getMyProfileController } from '../controllers/user1.controller';
 
 const router = Router();
 
 // Route untuk memberikan poin (Hanya Organizer yang berhak)
 // POST /users/add-points
+router.get(
+    '/profile', 
+    authenticate, 
+    getMyProfileController
+);
+
 router.post(
     '/add-points', 
     authenticate, 

@@ -71,6 +71,33 @@ export const getOrganizerRatingAndReviews = async (req: Request, res: Response):
     }
 };
 
+export const getMyProfileController = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    const userId = req.user!.userId;
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                points: true, // KRITIS: Saldo poin
+                role: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "Pengguna tidak ditemukan." });
+        }
+        
+        return res.status(200).json({ data: user });
+
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        return res.status(500).json({ message: "Gagal memuat profil pengguna." });
+    }
+};
+
 // Interface input untuk pemberian poin
 interface AddPointsBody {
     targetUserId: string; // ID customer yang akan menerima poin

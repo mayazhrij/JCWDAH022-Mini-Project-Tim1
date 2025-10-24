@@ -5,6 +5,7 @@ import { EventCreationBody } from '../types/event'; // Import interface baru
 import { PrismaClient } from '../../generated/prisma';
 import { PromotionCreationBody } from '../types/event';
 
+
 const prisma = new PrismaClient();
 
 export const createEvent = async (req: AuthRequest, res: Response): Promise<Response | void> => {
@@ -183,6 +184,82 @@ export const getEventDetailPublic = async (req: Request, res: Response): Promise
     }
 };
 
+interface UpdateEventBody {
+    name?: string;
+    description?: string;
+    // ... fields event lainnya
+    newTicketTypes?: Array<{ 
+        ticketName: string; 
+        ticketPrice: number; 
+        quota: number; 
+    }>;
+}
+
+/**
+ * @route PUT /events/:id
+ * @desc Organizer mengupdate event dan menambahkan jenis tiket baru.
+ * @access Private/Organizer
+ */
+export const updateEvent = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    const eventId = req.params.id;
+    const organizerId = req.user!.userId;
+    const { name, description, newTicketTypes } = req.body as UpdateEventBody; 
+
+    try {
+        // 1. Verifikasi Kepemilikan Event
+        const existingEvent = await prisma.event.findUnique({
+            where: { id: eventId },
+            select: { organizerId: true }
+        });
+        if (!existingEvent || existingEvent.organizerId !== organizerId) {
+            return res.status(403).json({ message: "Akses ditolak." });
+        }
+
+        await prisma.$transaction(async (tx) => {
+            let seatsChange = 0;
+            
+            // 2. Logic Tambah Tiket Baru 
+            if (newTicketTypes && newTicketTypes.length > 0) {
+                const ticketsToCreate = newTicketTypes.map(ticket => {
+                    seatsChange += Number(ticket.quota);
+                    return {
+                        eventId: eventId,
+                        ticketName: ticket.ticketName,
+                        ticketPrice: Number(ticket.ticketPrice),
+                        quota: Number(ticket.quota),
+                        availableSeats: Number(ticket.quota)
+                    };
+                });
+                
+                await tx.ticketType.createMany({ data: ticketsToCreate });
+
+                // 3. Update Kuota Total Event
+                 await tx.event.update({
+                    where: { id: eventId },
+                    data: { availableSeats: { increment: seatsChange } }
+                });
+            }
+
+            // 4. Update Detail Event (Name, Description, dll.)
+            if (name || description) {
+                await tx.event.update({
+                     where: { id: eventId },
+                     data: {
+                         name: name,
+                         description: description,
+                         // ... field update lainnya
+                     }
+                });
+            }
+
+            return res.status(200).json({ message: "Event berhasil diperbarui dan tiket promosi ditambahkan." });
+        });
+    } catch (error) {
+        console.error("Error updating event:", error);
+        return res.status(500).json({ message: "Gagal memperbarui event." });
+    }
+};
+
 /**
  * @route POST /promotions
  * @desc Organizer membuat record promosi waktu murni (TANPA VOUCHER CODE/NILAI DISKON).
@@ -277,5 +354,50 @@ export const getOrganizerEvents = async (req: AuthRequest, res: Response): Promi
     } catch (error) {
         console.error("Error fetching organizer events:", error);
         return res.status(500).json({ message: "Gagal memuat daftar event Anda." });
+    }
+};
+
+/**
+ * @route GET /tickets/:id
+ * @desc Mengambil detail tiket spesifik dan event terkait untuk halaman checkout.
+ * @access Private/Authenticated
+ */
+export const getTicketDetailController = async (req: AuthRequest, res: Response): Promise<Response | void> => {
+    const ticketTypeId = req.params.id; 
+
+    try {
+        // 1. Cari Tiket Target untuk mendapatkan Event ID
+        const targetTicket = await prisma.ticketType.findUnique({
+            where: { id: ticketTypeId },
+            select: { eventId: true }
+        });
+
+        if (!targetTicket) {
+            return res.status(404).json({ message: "Tiket tidak ditemukan." });
+        }
+        
+        const eventId = targetTicket.eventId;
+
+        // 2. Ambil SEMUA Detail Event dan Semua Jenis Tiket
+        const eventDetail = await prisma.event.findUnique({
+            where: { id: eventId },
+            include: {
+                ticketTypes: true, // WAJIB: Ambil semua jenis tiket (quota, price, etc.)
+                organizer: { select: { name: true } },
+                // ... include relasi lain yang dibutuhkan checkout (misal: lokasi, deskripsi)
+            }
+        });
+        
+        if (!eventDetail) {
+            return res.status(404).json({ message: "Event terkait tiket ini tidak ditemukan." });
+        }
+        
+        // Response Sukses: Kembalikan Event Detail (yang mencakup semua tiket)
+        // Kita mengembalikan eventDetail secara langsung untuk digunakan frontend
+        return res.status(200).json({ data: eventDetail });
+
+    } catch (error) {
+        console.error("Error fetching ticket detail:", error);
+        return res.status(500).json({ message: "Gagal memuat detail tiket." });
     }
 };
