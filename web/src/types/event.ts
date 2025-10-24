@@ -1,7 +1,7 @@
 interface TicketTypeInput {
     ticketName: string;
-    ticketPrice: number; // Dalam IDR
-    quota: number;       // Jumlah kursi yang tersedia
+    ticketPrice: number; 
+    quota: number;      
 }
 
 export interface EventCreationBody {
@@ -9,19 +9,17 @@ export interface EventCreationBody {
     description?: string;
     category: string;
     location: string;
-    startDate: string; // Akan di-parse ke Date
-    endDate: string;   // Akan di-parse ke Date
-    // Daftar jenis tiket yang wajib diisi
+    startDate: string; 
+    endDate: string;   
+
     ticketTypes: TicketTypeInput[]; 
-    // Anda bisa tambahkan field Promotion/etc. jika diperlukan
+
 }
 
-// Interface untuk data input saat membuat Promosi Waktu Murni
 export interface PromotionCreationBody {
     eventId: string;
     title: string;
     description?: string;
     startDate: string;
     endDate: string;
-    // Karena solusinya Waktu Murni, field diskon tidak diperlukan di sini.
 }

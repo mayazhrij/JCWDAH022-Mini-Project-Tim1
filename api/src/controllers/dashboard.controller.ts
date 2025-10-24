@@ -15,8 +15,6 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
       where: { event: { organizerId } },
     });
 
-    // groupBy with totalPrice (schema uses totalPrice)
-    // Use enum TransactionStatus.DONE for accepted transactions (schema doesn't have "accepted")
     const revenueRaw = await prisma.transaction.groupBy({
       by: ['createdAt'],
       where: { event: { organizerId }, status: TransactionStatus.done },
@@ -24,7 +22,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     });
 
     const revenueByMonth = revenueRaw.map(r => ({
-      month: r.createdAt.toISOString().slice(0, 7), // YYYY-MM
+      month: r.createdAt.toISOString().slice(0, 7),
       revenue: (r._sum?.totalPrice ?? 0) as number,
     }));
 
@@ -107,7 +105,7 @@ export const acceptTransaction = async (req: AuthRequest, res: Response) => {
 export const rejectTransaction = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.body;
-    await rollbackTransaction(id); // Restore seats, points, vouchers (ensure function exists)
+    await rollbackTransaction(id);
     await prisma.transaction.update({ where: { id }, data: { status: TransactionStatus.rejected } });
 
     const transaction = await prisma.transaction.findUnique({ where: { id }, include: { user: true } });

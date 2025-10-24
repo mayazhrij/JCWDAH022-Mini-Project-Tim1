@@ -13,36 +13,31 @@ import multer, { MulterError } from 'multer';
 const router = Router();
 const upload = multer({ 
     dest: 'uploads/', 
-    // Batas ukuran file 5 MB (5 * 1024 * 1024 bytes), karena kebutuhan Anda adalah Max 2MB, 
-    // kita set sedikit lebih tinggi untuk keamanan.
     limits: { fileSize: 5 * 1024 * 1024 } 
 });
 
-
-// POST /transactions
 router.post(
-    '/', // HARUS '/' karena prefix di app.ts sudah /transactions
+    '/',
     authenticate, 
     createTransaction
 );
-// --- MENGAMBIL TRANSAKSI (Hanya User yang Login) ---
+
 router.get(
     '/my', 
-    authenticate, // Wajib login, tidak peduli role-nya
-    getTransactionsByUser // Controller untuk mengambil data
+    authenticate,
+    getTransactionsByUser
 );
 
-// POST /transactions/:id/payment-proof - Upload oleh Customer
 router.post(
     '/payment-proof', 
     authenticate, 
-    // PERBAIKAN: Mengganti variabel uploadMiddleware dengan fungsi anonim inline
+
     (req: any, res: any, next: any) => {
-        const uploader = upload.single('paymentFile'); // Fieldname: paymentFile
+        const uploader = upload.single('paymentFile');
         uploader(req, res, (err: any) => {
             if (err instanceof MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
-                     return res.status(400).json({ message: "Gagal mengunggah: Ukuran file melebihi 5 MB." });
+                return res.status(400).json({ message: "Gagal mengunggah: Ukuran file melebihi 5 MB." });
                 }
                 return res.status(400).json({ message: `Gagal mengunggah: ${err.message}` });
             } else if (err) {
@@ -54,7 +49,6 @@ router.post(
     uploadPaymentProof
 );
 
-// POST /transactions/:id/confirm - Konfirmasi oleh Organizer
 router.post(
     '/:id/confirm', 
     authenticate, 

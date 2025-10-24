@@ -1,19 +1,15 @@
-// routes/review.routes.ts
-
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth1.middleware';
-import { createReview, getReviewStatus } from '../controllers/review.controller'; // Asumsi controller baru
+import { createReview, getReviewStatus } from '../controllers/review.controller';
 
 const router = Router();
 
-// GET /reviews/status (Cek status kehadiran)
 router.get(
     '/status', 
     authenticate, 
-    getReviewStatus // <-- Route baru
+    getReviewStatus
 );
 
-// POST /reviews
 router.post(
     '/', 
     authenticate, 

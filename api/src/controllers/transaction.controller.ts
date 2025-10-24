@@ -6,31 +6,19 @@ import { CheckoutBody, ConfirmationBody } from '../types/transaction';
 import { rollbackTransaction } from '../services/rollback.service'; 
 
 const prisma = new PrismaClient();
-const EXPIRY_TIME_MS = 2 * 60 * 60 * 1000; // 2 jam untuk kadaluarsa pembayaran
+const EXPIRY_TIME_MS = 2 * 60 * 60 * 1000;
 
-// -----------------------------------------------------------------
-// 1. POST /transactions (CREATE CHECKOUT)
-// -----------------------------------------------------------------
-
-/**
- * @route POST /transactions
- * @desc Proses checkout (Mengurangi Kuota dan Poin secara Atomis), termasuk Validasi Promosi.
- * @access Private/Customer
- */
 export const createTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     const userId = req.user!.userId;
     const { ticketTypeId, quantity, usePoints } = req.body as CheckoutBody;
 
     try {
-        // 1. VALIDASI DAN PENGAMBILAN DATA (Termasuk Data untuk Validasi Promosi)
         const [ticketType, user, activePromotions] = await prisma.$transaction([
-            // Ambil detail tiket dan detail Event (priceIdr)
             prisma.ticketType.findUnique({ 
                 where: { id: ticketTypeId },
                 include: { event: { select: { id: true, priceIdr: true } } } 
             }),
             prisma.user.findUnique({ where: { id: userId } }),
-            // Mencari promosi yang saat ini aktif untuk event ini (Waktu Murni)
             prisma.promotion.findMany({ 
                 where: { 
                     event: { ticketTypes: { some: { id: ticketTypeId } } }, 
@@ -43,19 +31,15 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
         if (!ticketType || !user) return res.status(404).json({ message: "Data tidak valid (Tiket atau Pengguna tidak ditemukan)." });
         if (ticketType.quota < quantity) return res.status(400).json({ message: `Kuota tiket tidak cukup. Tersisa: ${ticketType.quota}` });
 
-        
-        // 2. LOGIKA VALIDASI PROMOSI WAKTU MURNI
         if (activePromotions.length > 0) {
             const normalPrice = ticketType.event.priceIdr;
-            // Jika ada promosi aktif, pastikan harga tiket yang dipilih adalah HARGA DISKON
             if (ticketType.ticketPrice >= normalPrice) {
                 return res.status(400).json({ 
                     message: "Saat ini sedang ada masa promosi, Anda hanya diperbolehkan membeli tiket dengan harga diskon yang tersedia." 
                 });
             }
         }
-        
-        // 3. LOGIKA POINT USAGE
+
         const totalPriceRaw = ticketType.ticketPrice * quantity;
         let finalPrice = totalPriceRaw;
         let pointsUsed = 0;
@@ -67,10 +51,8 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             finalPrice -= deductedAmount;
         }
 
-        // 4. PRISMA TRANSACTION (ATOMIC OPERATION)
         await prisma.$transaction(async (tx) => {
-            
-            // A. Mencatat Transaksi
+
             const transaction = await tx.transaction.create({
                 data: {
                     userId: userId,
@@ -82,19 +64,16 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
                 }
             });
 
-            // B. PENGURANGAN KUOTA
             await tx.ticketType.update({
                 where: { id: ticketTypeId },
                 data: { quota: { decrement: quantity } } 
             });
 
-             // C. PERBAIKAN KRITIS: PENGURANGAN KUOTA TOTAL (EVENTS.AVAILABLE_SEATS)
             await tx.event.update({
                 where: { id: ticketType.eventId },
-                data: { availableSeats: { decrement: quantity } } // Kurangi kuota total
+                data: { availableSeats: { decrement: quantity } }
             });
 
-            // C. Mencatat Penggunaan Poin dan Mengurangi Saldo User
             if (pointsUsed > 0) {
                 await tx.pointsUsage.create({ data: { transactionId: transaction.id, usedPoints: pointsUsed, deductedAmount: deductedAmount } });
                 await tx.user.update({ where: { id: userId }, data: { points: { decrement: pointsUsed } } });
@@ -102,7 +81,6 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
             return transaction;
         });
 
-        // 5. RESPON SUKSES
         res.status(201).json({
             message: "Tiket berhasil dipesan. Menunggu pembayaran.",
             totalPrice: finalPrice,
@@ -116,66 +94,37 @@ export const createTransaction = async (req: AuthRequest, res: Response): Promis
     }
 };
 
-// -----------------------------------------------------------------
-// 2. POST /transactions/:id/payment-proof (UPLOAD BUKTI BAYAR)
-// -----------------------------------------------------------------
-
-/**
- * @route POST /transactions/:id/payment-proof
- * @desc Customer mengunggah bukti pembayaran dan mengubah status ke waiting_confirmation.
- * @access Private (Customer)
- */
 export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promise<Response | void> => {
-    
-    // --- PERBAIKAN MUTLAK: Mengambil ID dari req.body (Form Data) ---
-    // ID Transaksi harus dikirim sebagai field 'transactionId' di form-data dari frontend.
     const transactionId = (req.body.transactionId as string); 
-    // -------------------------------------------------------------
-
     const userIdFromToken = req.user!.userId; 
 
-    // --- DEBUG KRITIS ---
     console.log(`[DEBUG UPLOAD - FINAL FIX]: 
     - Transaction ID (from Body): ${transactionId} 
     - User ID from Token: ${userIdFromToken}`
     );
-    // ----------------------
-    
-    // Asumsi: path file didapat dari req.file.path setelah Multer
-    // NOTE: req.body.paymentProofUrl hanya digunakan jika tidak ada file (untuk debugging non-multer)
     const paymentProofPath = (req as any).file?.path || req.body.paymentProofUrl; 
     
-    // Validasi 1: Pastikan ID Transaksi terkirim
     if (!transactionId) {
-        // Ini adalah fix final yang seharusnya menangkap error karena frontend gagal mengirim ID di body
          return res.status(400).json({ message: "ID Transaksi hilang dalam Body permintaan." });
     }
 
-    // Validasi 2: Pastikan file terunggah
     if (!paymentProofPath) return res.status(400).json({ message: "Bukti pembayaran wajib diunggah." });
 
     try {
-        
-        // 3. Cari Transaksi
         const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
 
         if (!transaction) {
-            // Error ini akan muncul jika ID salah atau tidak ditemukan di DB
             return res.status(404).json({ message: "Transaksi tidak ditemukan." });
         }
         
-        // Cek Otorisasi (Logic yang Gagal sebelumnya)
         if (transaction.userId !== userIdFromToken) {
             console.warn(`[SECURITY FAIL]: User Token ID ${userIdFromToken} does not match DB ID ${transaction.userId}`);
             return res.status(403).json({ message: "Akses ditolak: Transaksi bukan milik Anda." });
         }
-        
-        // Cek Status
         if (transaction.status !== TransactionStatus.waiting_payment) {
             return res.status(400).json({ message: "Transaksi tidak dalam status menunggu pembayaran." });
         }
 
-        // Logic upload yang sukses
         await prisma.transaction.update({
             where: { id: transactionId },
             data: {
@@ -191,15 +140,7 @@ export const uploadPaymentProof = async (req: AuthRequest, res: Response): Promi
        return res.status(500).json({ message: "Gagal mengunggah bukti pembayaran." });
     }
 };
-// -----------------------------------------------------------------
-// 3. POST /transactions/:id/confirm (KONFIRMASI ADMIN)
-// -----------------------------------------------------------------
 
-/**
- * @route POST /transactions/:id/confirm
- * @desc Organizer mengkonfirmasi/menolak transaksi (done/rejected).
- * @access Private/Organizer
- */
 export const confirmTransaction = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     const transactionId = req.params.id;
     const { action } = req.body as ConfirmationBody;
@@ -210,7 +151,6 @@ export const confirmTransaction = async (req: AuthRequest, res: Response): Promi
     }
 
     if (!transactionId) {
-        // Log ini akan muncul jika req.params.id adalah undefined
         console.error("CRASH FIX: Transaction ID from params is missing.");
         return res.status(400).json({ message: "ID Transaksi wajib ada di URL." });
     }
@@ -218,7 +158,6 @@ export const confirmTransaction = async (req: AuthRequest, res: Response): Promi
     try {
         const transaction = await prisma.transaction.findUnique({ 
             where: { id: transactionId },
-            // Perlu include event untuk memverifikasi kepemilikan
             include: { event: { select: { organizerId: true } } } 
         });
 
@@ -244,14 +183,10 @@ export const confirmTransaction = async (req: AuthRequest, res: Response): Promi
         
         if (action === 'reject') {
             newStatus = TransactionStatus.rejected;
-            // PENTING: Panggil logic rollback saat ditolak
             await rollbackTransaction(transactionId); 
         } else {
             newStatus = TransactionStatus.done;
-            // TODO: Integrasi Pengiriman Email Notifikasi Acceptance
         }
-        
-        // Update Status
         await prisma.transaction.update({
             where: { id: transactionId },
             data: { status: newStatus }
@@ -265,24 +200,14 @@ export const confirmTransaction = async (req: AuthRequest, res: Response): Promi
     }
 };
 
-// -----------------------------------------------------------------
-// 4. GET /transactions/my (READ TRANSAKSI USER)
-// -----------------------------------------------------------------
-
-/**
- * @route GET /transactions/my
- * @desc Mengambil semua transaksi milik user yang sedang login.
- * @access Private (Customer/Organizer)
- */
 export const getTransactionsByUser = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.userId; 
 
     try {
         const transactions = await prisma.transaction.findMany({
             where: {
-                userId: userId, // Filter berdasarkan user yang sedang login
+                userId: userId,
             },
-            // Include data terkait untuk frontend
             include: {
                 event: { select: { name: true, startDate: true, location: true, priceIdr: true } },
                 ticketType: { select: { ticketName: true, ticketPrice: true } },

@@ -1,5 +1,3 @@
-// controllers/review.controller.ts
-
 import { Request, Response } from 'express';
 import { PrismaClient, TransactionStatus } from '../../generated/prisma'; 
 import { AuthRequest } from '../types/auth'; // Import AuthRequest
@@ -7,18 +5,12 @@ import { updateOrganizerRating } from '../services/review.service';
 
 const prisma = new PrismaClient();
 
-// Interface input review (asumsi ada di types/review.ts)
 interface ReviewBody {
     eventId: string;
     rating: number; 
     comment?: string;
 }
 
-/**
- * @route POST /reviews
- * @desc Customer memberikan review dan rating (Hanya jika status transaksi DONE).
- * @access Private/Customer
- */
 export const createReview = async (req: AuthRequest, res: Response): Promise<Response | void> => {
     const userId = req.user!.userId;
     const { eventId, rating, comment } = req.body as ReviewBody;
@@ -29,22 +21,20 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<Res
     }
 
     try {
-        // 2. Cek Telah Hadir (Status DONE)
         const attendedTransaction = await prisma.transaction.findFirst({
             where: {
                 userId: userId,
                 eventId: eventId,
-                status: TransactionStatus.done, // Wajib status DONE
+                status: TransactionStatus.done,
             },
-            // Perlu event untuk menghitung rating organizer
+
             include: { event: { select: { organizerId: true } } } 
         });
 
         if (!attendedTransaction) {
             return res.status(403).json({ message: "Akses terlarang. Anda hanya bisa memberikan review untuk event yang status transaksinya 'DONE' (telah hadir)." });
         }
-        
-        // 3. Cek Sudah Pernah Review (Mengatasi unique constraint yang hilang di schema)
+
         const existingReview = await prisma.review.findFirst({
             where: { userId: userId, eventId: eventId }
         });
@@ -53,8 +43,6 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<Res
             return res.status(409).json({ message: "Anda sudah memberikan review untuk event ini." });
         }
 
-
-        // 4. Buat Record Review (Prisma Transaction tidak diperlukan karena tidak ada pengurangan kuota/poin)
         const newReview = await prisma.review.create({
             data: {
                 userId: userId,
@@ -64,7 +52,6 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<Res
             }
         });
 
-        // 5. Update Rating Organizer (Logic Rating)
         const organizerId = attendedTransaction.event.organizerId;
         await updateOrganizerRating(organizerId); 
         
@@ -86,17 +73,15 @@ export const getReviewStatus = async (req: AuthRequest, res: Response): Promise<
     }
 
     try {
-        // 1. Cek Transaksi Selesai (Kehadiran)
         const doneTransaction = await prisma.transaction.findFirst({
             where: {
                 userId: userId,
                 eventId: eventId,
-                status: TransactionStatus.done, // Mencari status DONE
+                status: TransactionStatus.done,
             },
-            select: { id: true } // Hanya perlu tahu apakah ada
+            select: { id: true }
         });
 
-        // 2. Cek Apakah Sudah Pernah Review
         const existingReview = await prisma.review.findFirst({
             where: { userId: userId, eventId: eventId },
             select: { id: true }
@@ -104,24 +89,20 @@ export const getReviewStatus = async (req: AuthRequest, res: Response): Promise<
 
         let status: 'DONE' | 'PENDING' | 'NOT_FOUND' = 'NOT_FOUND';
         
-        // Tentukan status akhir
         if (doneTransaction) {
-             status = 'DONE'; // User hadir
+             status = 'DONE';
         } else {
-             // Cek apakah ada transaksi pending/expired
              const pendingTx = await prisma.transaction.findFirst({
                  where: { userId: userId, eventId: eventId, status: { in: [TransactionStatus.waiting_payment, TransactionStatus.waiting_confirmation] } }
              });
              if (pendingTx) {
-                 status = 'PENDING'; // User punya transaksi tapi belum selesai
+                 status = 'PENDING';
              }
         }
-
-
-        // 3. Respon Status Review
+        
         return res.status(200).json({
-            status: status, // DONE, PENDING, atau NOT_FOUND
-            hasReviewed: !!existingReview // Menggunakan boolean untuk status review
+            status: status,
+            hasReviewed: !!existingReview
         });
 
     } catch (error) {

@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { TextInput, Spinner, Button } from 'flowbite-react'; // Import Button
+import { TextInput, Spinner, Button } from 'flowbite-react';
 import { HiSearch, HiTicket } from 'react-icons/hi';
 import EventCard from './EventCard'; 
 import { getEvents } from '@/services/event.service'; 
 import { EventResponse } from '@/types/data'; 
 import { useDebounce } from '@/hooks/useDebounce'; 
-import { useAuthStatus } from '@/hooks/useAuthStatus'; // Import Hook Status Auth
+import { useAuthStatus } from '@/hooks/useAuthStatus';
 import Link from 'next/link';
 
 interface EventListProps {
@@ -17,12 +17,12 @@ interface EventListProps {
 const handleLogout = () => {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_role');
-    window.location.href = '/'; // Redirect ke halaman utama
+    window.location.href = '/';
 };
 
 const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
     const authStatus = useAuthStatus();
-    const isAuthenticated = authStatus.isAuthenticated; // <-- Dapatkan status otentikasi
+    const isAuthenticated = authStatus.isAuthenticated;
     const role = authStatus.role;
 
     const isInitialLoadComplete = authStatus.isInitialLoadComplete;
@@ -33,18 +33,15 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500); 
 
-    // --- LOGIC KRITIS: USE EFFECT UNTUK DEBOUNCE SEARCH ---
     useEffect(() => {
-        // Abaikan panggilan saat komponen baru dimuat dan debouncedSearchTerm masih kosong
         if (debouncedSearchTerm === '' && initialEvents.length > 0) {
-            setEvents(initialEvents); // Tampilkan initial events jika search kosong
+            setEvents(initialEvents);
             return;
         }
 
         const fetchSearchEvents = async () => {
             setIsLoading(true);
             try {
-                // Panggil service getEvents dengan query parameter 'q'
                 const fetchedEvents = await getEvents(debouncedSearchTerm);
                 setEvents(fetchedEvents);
             } catch (error) {
@@ -55,7 +52,6 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
             }
         };
 
-        // Panggil fungsi pencarian hanya jika debouncedSearchTerm berubah
         fetchSearchEvents();
         
     }, [debouncedSearchTerm]);
@@ -70,13 +66,11 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                         <p className="text-sm mt-2">Memuat status sesi...</p>
                     </div> ) : (
                 isAuthenticated ? (
-                    // --- TAMPILAN JIKA SUDAH LOGIN (LOGOUT BUTTON) ---
                     <div className="flex flex-col items-center gap-2">
                         <p className="text-md text-gray-700 font-semibold">
                             Welcome, {role === 'organizer' ? 'Organizer' : 'Customer'}!
                         </p>
 
-                        {/* Organizer only: back to dashboard */}
                         {role === 'organizer' && (
                             <Link href='/organizer/dashboard' passHref>
                                 <Button size="sm" color="blue">
@@ -97,7 +91,6 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                         </Button>
                     </div>
                 ) : (
-                    // --- TAMPILAN JIKA BELUM LOGIN (LOGIN/REGISTER BUTTON) ---
                     <div className="flex flex-col items-center">
                         <p className="mb-3 text-sm text-gray-700">
                             Please log in to access more features.
@@ -120,8 +113,7 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                     )
                 )}
             </div>
-            
-            {/* 2. Search Bar dengan Debounce */}
+        
             <div className="max-w-xl mx-auto w-full">
                 <TextInput
                     id="search"
@@ -133,8 +125,7 @@ const EventListClient: React.FC<EventListProps> = ({ initialEvents }) => {
                     disabled={isLoading}
                 />
             </div>
-            
-            {/* 3. Tampilan List Event */}
+
             {isLoading ? (
                 <div className="text-center mt-8">
                     <Spinner size="xl" />

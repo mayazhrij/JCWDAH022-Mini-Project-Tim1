@@ -9,22 +9,21 @@ import { EventCreationBody } from '@/types/event';
 import Header from '@/components/Headers';
 
 let ticketIdCounter = 1;
-// Interface untuk state dinamis tiket
+
 interface TicketState {
-    id: number; // Untuk key React dan manipulasi array
+    id: number;
     ticketName: string;
     ticketPrice: number | '';
     quota: number | '';
 }
 
 export default function CreateEventPage() {
-    // --- PERBAIKAN 1: HAPUS priceIdr dari Initial State ---
+    
     const [eventData, setEventData] = useState<Omit<EventCreationBody, 'ticketTypes'>>({
         name: '', description: '', category: '', location: '', startDate: '', endDate: '', 
-        // priceIdr: 0 dihapus karena dihitung di backend
     });
     const [ticketTypes, setTicketTypes] = useState<TicketState[]>([
-        { id: ticketIdCounter++, ticketName: 'Regular', ticketPrice: '', quota: '' } // Gunakan counter
+        { id: ticketIdCounter++, ticketName: 'Regular', ticketPrice: '', quota: '' } 
     ]);
     
     const [error, setError] = useState('');
@@ -32,7 +31,6 @@ export default function CreateEventPage() {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
-    // --- LOGIC ARRAY TICKET DINAMIS (Tidak ada perubahan) ---
 
     const handleTicketChange = (id: number, field: keyof TicketState, value: string | number) => {
         setTicketTypes(prevTickets => 
@@ -45,7 +43,7 @@ export default function CreateEventPage() {
     const addTicketType = () => {
         setTicketTypes(prevTickets => [
             ...prevTickets,
-            { id: ticketIdCounter++, ticketName: '', ticketPrice: '', quota: '' } // <-- Increment ID
+            { id: ticketIdCounter++, ticketName: '', ticketPrice: '', quota: '' }
         ]);
     };
 
@@ -53,7 +51,6 @@ export default function CreateEventPage() {
         setTicketTypes(prevTickets => prevTickets.filter(ticket => ticket.id !== id));
     };
 
-    // --- LOGIC SUBMIT UTAMA ---
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +58,6 @@ export default function CreateEventPage() {
         setSuccessMessage('');
         setIsLoading(true);
 
-        // 1. Validasi Input (Pastikan semua tiket terisi)
         const invalidTicket = ticketTypes.some(t => !t.ticketName || t.ticketPrice === '' || t.quota === '');
         if (invalidTicket) {
             setError('Semua field pada Jenis Tiket wajib diisi.');
@@ -69,7 +65,6 @@ export default function CreateEventPage() {
             return;
         }
 
-        // 2. Format Data untuk Backend
         const formattedTickets = ticketTypes.map(t => ({
             ticketName: t.ticketName,
             ticketPrice: Number(t.ticketPrice),
@@ -87,12 +82,10 @@ export default function CreateEventPage() {
             // 3. Panggil API POST /events
             await createEventApi(finalData);
             
-            setSuccessMessage('Event berhasil dibuat! Anda akan dialihkan ke dashboard.');
-            // 4. Reset Form
+            setSuccessMessage('Event created successfully! You will be redirected to the dashboard.');
             setEventData({ name: '', description: '', category: '', location: '', startDate: '', endDate: '' });
             setTicketTypes([{ id: Date.now(), ticketName: 'Regular', ticketPrice: '', quota: '' }]);
 
-            // 5. Redirect setelah sukses
             setTimeout(() => {
                 router.push('/organizer/dashboard');
             }, 2000);
@@ -153,7 +146,6 @@ export default function CreateEventPage() {
                         </div>
                     </div>
 
-                    {/* --- BAGIAN 2: JENIS TIKET DAN HARGA --- */}
                     <h2 className="text-xl font-semibold border-b pb-2 text-gray-700 mt-4">Ticket Type & Quota</h2>
 
                     {ticketTypes.map((ticket, index) => (
