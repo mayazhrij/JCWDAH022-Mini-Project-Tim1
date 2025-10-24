@@ -67,7 +67,7 @@ export default function CheckoutPage() {
          return <div className="text-center p-20 min-h-screen"><Spinner size="xl" /><p>Memverifikasi sesi...</p></div>;
     }
     if (!isAuthenticated) {
-        router.push('/auth/login');
+        router.push('/login');
         return null;
     }
     if (role === 'organizer') {
@@ -152,7 +152,7 @@ export default function CheckoutPage() {
     };
     
     const ticketName = selectedTicket.ticketName || "Tiket";
-    const eventName = event.name || "Nama Event";
+    const eventName = fetchedData.name || "Nama Event";
     
 
     return (
@@ -197,15 +197,19 @@ export default function CheckoutPage() {
                                 </option>
                             ))}
                         </Select>
-                        <p className="text-xs text-red-500 mt-1">Sisa Kuota: {availableQuota}</p>
+                        <p className="text-xs text-red-500 mt-1">Available Quota: {availableQuota}</p>
                     </div>
 
 
                     {/* Harga Satuan */}
                     <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-600">Maximum Order Quantity is 5 tickets</span>
+                       </div> 
+                    <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-600">Harga Satuan</span>
                         <span className="font-semibold">Rp {rawTicketPrice.toLocaleString('id-ID')}</span>
                     </div>
+                    
                     {/* Kuantitas */}
                     <div className="flex items-center justify-between">
                         <span className="text-gray-600">Kuantitas (Tersisa: {availableQuota})</span>
@@ -242,6 +246,13 @@ export default function CheckoutPage() {
                     <div className="flex justify-between text-lg font-bold mt-2">
                         <span>Total Pembayaran</span>
                         <span className="2xl text-blue-700">Rp {totalDue.toLocaleString('id-ID')}</span>
+                    </div>
+                </Card>
+
+                <Card className="bg-blue-50">
+                    <div className="flex justify-between font-bold mt-2">
+                        <span>Payment Address</span>
+                        <span>March Bank 3542564454 on behalf of Tickety Company</span>
                     </div>
                 </Card>
 

@@ -221,13 +221,13 @@ export const updateEvent = async (req: AuthRequest, res: Response): Promise<Resp
             // 2. Logic Tambah Tiket Baru 
             if (newTicketTypes && newTicketTypes.length > 0) {
                 const ticketsToCreate = newTicketTypes.map(ticket => {
-                    seatsChange += Number(ticket.quota);
+                    const quotaAmount = Number(ticket.quota);
+                    seatsChange += quotaAmount;
                     return {
                         eventId: eventId,
                         ticketName: ticket.ticketName,
                         ticketPrice: Number(ticket.ticketPrice),
-                        quota: Number(ticket.quota),
-                        availableSeats: Number(ticket.quota)
+                        quota: quotaAmount,
                     };
                 });
                 
@@ -381,10 +381,16 @@ export const getTicketDetailController = async (req: AuthRequest, res: Response)
         // 2. Ambil SEMUA Detail Event dan Semua Jenis Tiket
         const eventDetail = await prisma.event.findUnique({
             where: { id: eventId },
-            include: {
-                ticketTypes: true, // WAJIB: Ambil semua jenis tiket (quota, price, etc.)
-                organizer: { select: { name: true } },
-                // ... include relasi lain yang dibutuhkan checkout (misal: lokasi, deskripsi)
+            // PERBAIKAN: Gunakan select untuk memastikan field dasar event yang dibutuhkan terambil
+            select: {
+                id: true,
+                name: true, // KRITIS: Nama Event, sekarang dijamin terambil
+                startDate: true, // Data vital untuk checkout
+                location: true, // Data vital untuk checkout
+                priceIdr: true, // Jika event berbayar (base price)
+                
+                ticketTypes: true, // Ambil relasi Ticket Types (semua jenis tiket)
+                organizer: { select: { name: true } }, // Ambil relasi organizer (hanya nama)
             }
         });
         
@@ -393,7 +399,7 @@ export const getTicketDetailController = async (req: AuthRequest, res: Response)
         }
         
         // Response Sukses: Kembalikan Event Detail (yang mencakup semua tiket)
-        // Kita mengembalikan eventDetail secara langsung untuk digunakan frontend
+        // Frontend akan mengakses nama event di: data.name
         return res.status(200).json({ data: eventDetail });
 
     } catch (error) {
